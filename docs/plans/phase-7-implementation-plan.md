@@ -692,7 +692,7 @@ apps/web/components/domain/__tests__/dispute-card.test.tsx
 **Status:** ✅ **COMPLETE** - 88 tests passing
 **Dependencies:** Resend account, React Email templates
 
-### 7.4.1 Email Infrastructure
+### 7.4.1 Email Infrastructure ✅
 
 **Description:** Set up Resend client and base email utilities.
 
@@ -713,7 +713,7 @@ apps/web/emails/__tests__/base-layout.test.tsx
 - [x] Add email sending utility function
 - [x] Verify: Resend client configured correctly
 
-### 7.4.2 Invite Email Template
+### 7.4.2 Invite Email Template ✅
 
 **Description:** Email template for trip invitations.
 
@@ -733,7 +733,7 @@ apps/web/app/api/email/send-invite/__tests__/route.test.ts
 - [x] Integrate with invite creation flow
 - [x] Verify: Invite email sent successfully
 
-### 7.4.3 Payment Reminder Emails
+### 7.4.3 Payment Reminder Emails ✅
 
 **Description:** Email reminders for outstanding payments.
 
@@ -753,7 +753,7 @@ apps/web/app/api/email/payment-reminder/__tests__/route.test.ts
 - [x] Add scheduled reminder option
 - [x] Verify: Reminder email sent correctly
 
-### 7.4.4 Settlement Notification Emails
+### 7.4.4 Settlement Notification Emails ✅
 
 **Description:** Email notifications when settlements are confirmed.
 
@@ -781,7 +781,7 @@ apps/web/app/api/email/settlement-notification/__tests__/route.test.ts
 **Status:** ✅ **COMPLETE** - 67 tests passing
 **Dependencies:** JSZip, @react-pdf/renderer
 
-### 7.5.1 PDF Export
+### 7.5.1 PDF Export ✅
 
 **Description:** Generate PDF expense reports using @react-pdf/renderer.
 
@@ -802,7 +802,7 @@ apps/web/components/domain/__tests__/export-pdf-button.test.tsx
 - [x] Add expense breakdown by category
 - [x] Verify: PDF generates correctly
 
-### 7.5.2 Bulk Gallery Download
+### 7.5.2 Bulk Gallery Download ✅
 
 **Description:** Download multiple photos as a ZIP file.
 
@@ -822,7 +822,7 @@ apps/web/components/domain/__tests__/bulk-download-button.test.tsx
 - [x] Add selection mode to gallery
 - [x] Verify: ZIP downloads correctly
 
-### 7.5.3 Individual Photo Download
+### 7.5.3 Individual Photo Download ✅
 
 **Description:** Download single photos from gallery.
 
