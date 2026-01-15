@@ -1,0 +1,27 @@
+package steamboat:mcp-server;
+
+interface types {
+    /// MCP request from client to server
+    record mcp-request {
+        method: string,
+        params: string,
+    }
+
+    /// MCP response from server to client
+    record mcp-response {
+        success: bool,
+        result: option<string>,
+        error: option<string>,
+    }
+}
+
+interface handler {
+    use types.{mcp-request, mcp-response};
+
+    /// Handle an MCP request and return a response
+    handle: func(request: mcp-request) -> mcp-response;
+}
+
+world mcp-server {
+    export handler;
+}

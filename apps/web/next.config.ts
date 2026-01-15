@@ -1,0 +1,82 @@
+import type { NextConfig } from 'next';
+import path from 'path';
+
+const nextConfig: NextConfig = {
+  reactStrictMode: true,
+
+  // Enable WebAssembly support
+  webpack: (config, { isServer }) => {
+    // Enable async WebAssembly
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+      layers: true,
+    };
+
+    // Configure WASM file handling
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: 'webassembly/async',
+    });
+
+    // Resolve WASM package imports
+    if (!isServer) {
+      const cratesDir = path.resolve(__dirname, '../../crates');
+
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'expense-optimizer': path.join(cratesDir, 'expense-optimizer/pkg'),
+        'finance-core': path.join(cratesDir, 'finance-core/pkg'),
+        'media-processor': path.join(cratesDir, 'media-processor/pkg'),
+      };
+    }
+
+    // Prevent WASM modules from being bundled on server
+    if (isServer) {
+      config.externals = config.externals || [];
+      if (Array.isArray(config.externals)) {
+        config.externals.push({
+          'expense-optimizer': 'expense-optimizer',
+          'finance-core': 'finance-core',
+          'media-processor': 'media-processor',
+        });
+      }
+    }
+
+    return config;
+  },
+
+  // Headers for WASM files
+  async headers() {
+    return [
+      {
+        source: '/_next/static/wasm/:path*',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/wasm',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/wasm/:path*',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/wasm',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
+  },
+};
+
+export default nextConfig;

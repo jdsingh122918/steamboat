@@ -1,0 +1,25 @@
+package steamboat:payment-links;
+
+interface payment-types {
+    /// Supported payment platforms
+    variant platform {
+        venmo,
+        paypal,
+        cashapp,
+        zelle,
+    }
+
+    /// Result of generating a payment link
+    record payment-link-result {
+        platform: platform,
+        link: option<string>,
+        fallback-text: string,
+    }
+}
+
+world payment-links-mcp {
+    use steamboat:mcp-server/types.{mcp-request, mcp-response};
+    use payment-types.{platform, payment-link-result};
+
+    export steamboat:mcp-server/handler;
+}

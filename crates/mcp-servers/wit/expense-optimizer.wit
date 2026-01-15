@@ -1,0 +1,34 @@
+package steamboat:expense-optimizer;
+
+interface expense-types {
+    /// A debt relationship between two people
+    record debt {
+        debtor: string,
+        creditor: string,
+        amount-cents: s64,
+        expense-ids: list<string>,
+    }
+
+    /// A payment instruction
+    record payment {
+        from-person: string,
+        to-person: string,
+        amount-cents: s64,
+        reason: string,
+    }
+
+    /// Result of debt simplification
+    record simplification-result {
+        original-count: u32,
+        optimized-count: u32,
+        payments: list<payment>,
+        savings-percent: float64,
+    }
+}
+
+world expense-optimizer-mcp {
+    use steamboat:mcp-server/types.{mcp-request, mcp-response};
+    use expense-types.{debt, payment, simplification-result};
+
+    export steamboat:mcp-server/handler;
+}

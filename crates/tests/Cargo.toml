@@ -1,0 +1,19 @@
+[package]
+name = "steamboat-tests"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Cross-module integration tests for Steamboat crates"
+publish = false
+
+[lib]
+name = "steamboat_tests"
+path = "lib.rs"
+
+[[test]]
+name = "integration"
+path = "integration.rs"
+
+[dependencies]
+finance-core = { workspace = true }
+expense-optimizer = { workspace = true }

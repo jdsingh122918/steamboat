@@ -1,0 +1,50 @@
+{
+  "name": "@steamboat/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:wasm": "cd ../.. && ./scripts/build-wasm.sh && cd apps/web && node scripts/copy-wasm.js",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
+    "@react-email/components": "^1.0.4",
+    "@react-email/render": "^2.0.2",
+    "@react-pdf/renderer": "^4.3.2",
+    "file-saver": "^2.0.5",
+    "iron-session": "^8.0.4",
+    "jszip": "^3.10.1",
+    "mongodb": "^6.21.0",
+    "next": "^15.1.0",
+    "pusher": "^5.3.2",
+    "pusher-js": "^8.4.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "resend": "^6.7.0",
+    "uuid": "^13.0.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.1.0",
+    "@types/file-saver": "^2.0.7",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "copy-webpack-plugin": "^12.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.1.0",
+    "happy-dom": "^15.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
