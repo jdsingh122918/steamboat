@@ -13,6 +13,7 @@ import {
   StyleSheet,
   pdf,
 } from '@react-pdf/renderer';
+import { formatCurrency, formatDateShort } from '@/lib/utils/format';
 
 /**
  * Expense item for the report.
@@ -61,33 +62,17 @@ export interface ExpenseReportProps {
 }
 
 /**
- * Currency symbols.
+ * Format currency for PDF with specific currency.
  */
-const currencySymbols: Record<string, string> = {
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  CAD: 'CA$',
-  AUD: 'A$',
-};
-
-/**
- * Format currency amount.
- */
-function formatCurrency(amount: number, currency: string): string {
-  const symbol = currencySymbols[currency] || currency + ' ';
-  return `${symbol}${Math.abs(amount).toFixed(2)}`;
+function formatPdfCurrency(amount: number, currency: string): string {
+  return formatCurrency(amount, { currency });
 }
 
 /**
- * Format date for display.
+ * Format date for PDF display.
  */
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+function formatPdfDate(date: Date): string {
+  return formatDateShort(date);
 }
 
 /**
@@ -262,7 +247,7 @@ export function ExpenseReportPDF({
         <View style={styles.header}>
           <Text style={styles.title}>{tripName}</Text>
           <Text style={styles.subtitle}>
-            Expense Report • {formatDate(tripDates.start)} - {formatDate(tripDates.end)}
+            Expense Report • {formatPdfDate(tripDates.start)} - {formatPdfDate(tripDates.end)}
           </Text>
         </View>
 
@@ -279,11 +264,11 @@ export function ExpenseReportPDF({
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Per Person Average</Text>
             <Text style={styles.summaryValue}>
-              {formatCurrency(totalAmount / Math.max(attendees.length, 1), currency)}
+              {formatPdfCurrency(totalAmount / Math.max(attendees.length, 1), currency)}
             </Text>
           </View>
           <Text style={styles.totalAmount}>
-            Total: {formatCurrency(totalAmount, currency)}
+            Total: {formatPdfCurrency(totalAmount, currency)}
           </Text>
         </View>
 
@@ -293,7 +278,7 @@ export function ExpenseReportPDF({
           {Object.entries(categoryTotals).map(([category, amount]) => (
             <View key={category} style={styles.summaryRow}>
               <Text style={styles.categoryBadge}>{formatCategory(category)}</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(amount, currency)}</Text>
+              <Text style={styles.summaryValue}>{formatPdfCurrency(amount, currency)}</Text>
             </View>
           ))}
         </View>
@@ -317,12 +302,12 @@ export function ExpenseReportPDF({
                   key={expense.id}
                   style={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}
                 >
-                  <Text style={styles.colDate}>{formatDate(expense.date)}</Text>
+                  <Text style={styles.colDate}>{formatPdfDate(expense.date)}</Text>
                   <Text style={styles.colDescription}>{expense.description}</Text>
                   <Text style={styles.colCategory}>{formatCategory(expense.category)}</Text>
                   <Text style={styles.colPaidBy}>{expense.paidBy}</Text>
                   <Text style={styles.colAmount}>
-                    {formatCurrency(expense.amount, currency)}
+                    {formatPdfCurrency(expense.amount, currency)}
                   </Text>
                 </View>
               ))}
@@ -341,7 +326,7 @@ export function ExpenseReportPDF({
                   style={item.balance >= 0 ? styles.balancePositive : styles.balanceNegative}
                 >
                   {item.balance >= 0 ? '+' : '-'}
-                  {formatCurrency(item.balance, currency)}
+                  {formatPdfCurrency(item.balance, currency)}
                 </Text>
               </View>
             ))}
@@ -358,7 +343,7 @@ export function ExpenseReportPDF({
                 <Text style={styles.settlementArrow}>→</Text>
                 <Text>{settlement.to}</Text>
                 <Text style={{ marginLeft: 'auto' }}>
-                  {formatCurrency(settlement.amount, currency)}
+                  {formatPdfCurrency(settlement.amount, currency)}
                 </Text>
               </View>
             ))}

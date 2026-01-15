@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { formatCurrency, formatDate } from '@/lib/utils/format';
 
 type DisputeStatus = 'open' | 'resolved' | 'rejected';
 type DisputeType = 'incorrect_amount' | 'not_participated' | 'other';
@@ -44,18 +45,6 @@ export function DisputeCard({
   const [isResolving, setIsResolving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const formatAmount = (cents: number): string => {
-    return `$${(cents / 100).toFixed(2)}`;
-  };
-
-  const formatDate = (date: Date): string => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   const handleResolve = useCallback(
     async (status: 'resolved' | 'rejected') => {
       if (isResolving) return;
@@ -85,7 +74,7 @@ export function DisputeCard({
       <div className="dispute-card-header">
         <div className="dispute-expense-info">
           <h4 className="dispute-expense-description">{dispute.expenseDescription}</h4>
-          <span className="dispute-expense-amount">{formatAmount(dispute.expenseAmount)}</span>
+          <span className="dispute-expense-amount">{formatCurrency(dispute.expenseAmount, { isCents: true })}</span>
         </div>
         <span className={`dispute-status-badge status-${dispute.status}`}>
           {dispute.status}

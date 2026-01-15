@@ -102,6 +102,26 @@ export interface TripEventHandlers {
   onPollClosed?: (data: unknown) => void;
 }
 
+// Mapping from handler keys to event types
+const handlerEventMapping: Record<keyof TripEventHandlers, PusherEventTypeValue> = {
+  onExpenseCreated: PusherEventType.EXPENSE_CREATED,
+  onExpenseUpdated: PusherEventType.EXPENSE_UPDATED,
+  onExpenseDeleted: PusherEventType.EXPENSE_DELETED,
+  onActivityCreated: PusherEventType.ACTIVITY_CREATED,
+  onActivityUpdated: PusherEventType.ACTIVITY_UPDATED,
+  onActivityDeleted: PusherEventType.ACTIVITY_DELETED,
+  onRsvpUpdated: PusherEventType.RSVP_UPDATED,
+  onPaymentReceived: PusherEventType.PAYMENT_RECEIVED,
+  onSettlementUpdated: PusherEventType.SETTLEMENT_UPDATED,
+  onMediaUploaded: PusherEventType.MEDIA_UPLOADED,
+  onMediaDeleted: PusherEventType.MEDIA_DELETED,
+  onAttendeeJoined: PusherEventType.ATTENDEE_JOINED,
+  onAttendeeLeft: PusherEventType.ATTENDEE_LEFT,
+  onPollCreated: PusherEventType.POLL_CREATED,
+  onPollVoted: PusherEventType.POLL_VOTED,
+  onPollClosed: PusherEventType.POLL_CLOSED,
+};
+
 /**
  * Subscribe to trip channel with event handlers
  */
@@ -113,64 +133,12 @@ export function subscribeToTrip(
   const channelName = getTripChannelName(tripId);
   const channel = pusher.subscribe(channelName);
 
-  // Bind expense handlers
-  if (handlers.onExpenseCreated) {
-    channel.bind(PusherEventType.EXPENSE_CREATED, handlers.onExpenseCreated);
-  }
-  if (handlers.onExpenseUpdated) {
-    channel.bind(PusherEventType.EXPENSE_UPDATED, handlers.onExpenseUpdated);
-  }
-  if (handlers.onExpenseDeleted) {
-    channel.bind(PusherEventType.EXPENSE_DELETED, handlers.onExpenseDeleted);
-  }
-
-  // Bind activity handlers
-  if (handlers.onActivityCreated) {
-    channel.bind(PusherEventType.ACTIVITY_CREATED, handlers.onActivityCreated);
-  }
-  if (handlers.onActivityUpdated) {
-    channel.bind(PusherEventType.ACTIVITY_UPDATED, handlers.onActivityUpdated);
-  }
-  if (handlers.onActivityDeleted) {
-    channel.bind(PusherEventType.ACTIVITY_DELETED, handlers.onActivityDeleted);
-  }
-  if (handlers.onRsvpUpdated) {
-    channel.bind(PusherEventType.RSVP_UPDATED, handlers.onRsvpUpdated);
-  }
-
-  // Bind payment handlers
-  if (handlers.onPaymentReceived) {
-    channel.bind(PusherEventType.PAYMENT_RECEIVED, handlers.onPaymentReceived);
-  }
-  if (handlers.onSettlementUpdated) {
-    channel.bind(PusherEventType.SETTLEMENT_UPDATED, handlers.onSettlementUpdated);
-  }
-
-  // Bind media handlers
-  if (handlers.onMediaUploaded) {
-    channel.bind(PusherEventType.MEDIA_UPLOADED, handlers.onMediaUploaded);
-  }
-  if (handlers.onMediaDeleted) {
-    channel.bind(PusherEventType.MEDIA_DELETED, handlers.onMediaDeleted);
-  }
-
-  // Bind attendee handlers
-  if (handlers.onAttendeeJoined) {
-    channel.bind(PusherEventType.ATTENDEE_JOINED, handlers.onAttendeeJoined);
-  }
-  if (handlers.onAttendeeLeft) {
-    channel.bind(PusherEventType.ATTENDEE_LEFT, handlers.onAttendeeLeft);
-  }
-
-  // Bind poll handlers
-  if (handlers.onPollCreated) {
-    channel.bind(PusherEventType.POLL_CREATED, handlers.onPollCreated);
-  }
-  if (handlers.onPollVoted) {
-    channel.bind(PusherEventType.POLL_VOTED, handlers.onPollVoted);
-  }
-  if (handlers.onPollClosed) {
-    channel.bind(PusherEventType.POLL_CLOSED, handlers.onPollClosed);
+  // Bind handlers to their corresponding events
+  for (const [handlerKey, eventType] of Object.entries(handlerEventMapping)) {
+    const handler = handlers[handlerKey as keyof TripEventHandlers];
+    if (handler) {
+      channel.bind(eventType, handler);
+    }
   }
 
   // Return unsubscribe function

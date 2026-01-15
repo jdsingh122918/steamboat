@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { formatDate } from '@/lib/utils/format';
 
 interface MediaUploader {
   id: string;
@@ -119,14 +120,6 @@ export function MediaViewer({
   const handleImageLoad = useCallback(() => {
     setIsLoading(false);
   }, []);
-
-  const formatDate = (date: Date): string => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
 
   if (!isOpen) {
     return null;

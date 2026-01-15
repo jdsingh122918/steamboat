@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
+import { randomUUID } from 'crypto';
 import { requireTripAccess, requireAdmin } from '@/lib/auth/guards';
 import {
   getPollsByTrip,
@@ -15,25 +16,18 @@ import {
   getPollResults,
 } from '@/lib/db/operations/polls';
 import { Poll, PollStatuses } from '@/lib/db/models';
-import { randomUUID } from 'crypto';
 import { triggerTripEvent } from '@/lib/pusher-server';
 import { PusherEventType } from '@/lib/pusher';
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
+import {
+  type ApiResponse,
+  isValidObjectId,
+  errorResponse,
+  successResponse,
+  handleTripAccessError,
+} from '@/lib/api';
 
 interface PollWithVoteCounts extends Poll {
   voteCounts: Array<{ optionId: string; optionText: string; votes: number }>;
-}
-
-/**
- * Validate MongoDB ObjectId format.
- */
-function isValidObjectId(id: string): boolean {
-  return ObjectId.isValid(id) && new ObjectId(id).toString() === id;
 }
 
 /**
@@ -72,22 +66,15 @@ export async function GET(
 
     // Validate tripId format
     if (!isValidObjectId(tripId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid trip ID format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid trip ID format', 400);
     }
 
     // Verify trip access
     try {
       await requireTripAccess(tripId);
     } catch (error) {
-      if (error instanceof Error && error.message.startsWith('Forbidden:')) {
-        return NextResponse.json(
-          { success: false, error: error.message },
-          { status: 403 }
-        );
-      }
+      const accessError = handleTripAccessError(error);
+      if (accessError) return accessError;
       throw error;
     }
 
@@ -97,12 +84,9 @@ export async function GET(
 
     // Validate status filter if provided
     if (statusFilter && !PollStatuses.includes(statusFilter as any)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Invalid status filter. Must be one of: ${PollStatuses.join(', ')}`,
-        },
-        { status: 400 }
+      return errorResponse(
+        `Invalid status filter. Must be one of: ${PollStatuses.join(', ')}`,
+        400
       );
     }
 
@@ -127,19 +111,10 @@ export async function GET(
     // Add vote counts to each poll
     const pollsWithCounts = polls.map(addVoteCounts);
 
-    return NextResponse.json({
-      success: true,
-      data: pollsWithCounts,
-    });
+    return successResponse(pollsWithCounts);
   } catch (error) {
     console.error('GET /api/trips/[tripId]/polls error:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to fetch polls',
-      },
-      { status: 500 }
-    );
+    return errorResponse('Failed to fetch polls', 500);
   }
 }
 
@@ -162,10 +137,7 @@ export async function POST(
 
     // Validate tripId format
     if (!isValidObjectId(tripId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid trip ID format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid trip ID format', 400);
     }
 
     // Require admin access
@@ -174,12 +146,8 @@ export async function POST(
       const result = await requireAdmin(tripId);
       attendee = result.attendee;
     } catch (error) {
-      if (error instanceof Error && error.message.startsWith('Forbidden:')) {
-        return NextResponse.json(
-          { success: false, error: error.message },
-          { status: 403 }
-        );
-      }
+      const accessError = handleTripAccessError(error);
+      if (accessError) return accessError;
       throw error;
     }
 
@@ -189,33 +157,21 @@ export async function POST(
 
     // Validate required fields
     if (!question || typeof question !== 'string' || question.trim().length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'question is required and must be a non-empty string' },
-        { status: 400 }
-      );
+      return errorResponse('question is required and must be a non-empty string', 400);
     }
 
     if (!options || !Array.isArray(options)) {
-      return NextResponse.json(
-        { success: false, error: 'options is required and must be an array' },
-        { status: 400 }
-      );
+      return errorResponse('options is required and must be an array', 400);
     }
 
     if (options.length < 2) {
-      return NextResponse.json(
-        { success: false, error: 'options must have at least 2 items' },
-        { status: 400 }
-      );
+      return errorResponse('options must have at least 2 items', 400);
     }
 
     // Validate all options are non-empty strings
     for (const opt of options) {
       if (typeof opt !== 'string' || opt.trim().length === 0) {
-        return NextResponse.json(
-          { success: false, error: 'All options must be non-empty strings' },
-          { status: 400 }
-        );
+        return errorResponse('All options must be non-empty strings', 400);
       }
     }
 
@@ -223,16 +179,10 @@ export async function POST(
     if (closesAt) {
       const closesAtDate = new Date(closesAt);
       if (isNaN(closesAtDate.getTime())) {
-        return NextResponse.json(
-          { success: false, error: 'closesAt must be a valid ISO date string' },
-          { status: 400 }
-        );
+        return errorResponse('closesAt must be a valid ISO date string', 400);
       }
       if (closesAtDate <= new Date()) {
-        return NextResponse.json(
-          { success: false, error: 'closesAt must be in the future' },
-          { status: 400 }
-        );
+        return errorResponse('closesAt must be in the future', 400);
       }
     }
 
@@ -260,18 +210,9 @@ export async function POST(
       poll: createdPoll,
     });
 
-    return NextResponse.json(
-      { success: true, data: createdPoll },
-      { status: 201 }
-    );
+    return successResponse(createdPoll, 201);
   } catch (error) {
     console.error('POST /api/trips/[tripId]/polls error:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to create poll',
-      },
-      { status: 500 }
-    );
+    return errorResponse('Failed to create poll', 500);
   }
 }

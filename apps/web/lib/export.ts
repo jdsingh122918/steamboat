@@ -4,33 +4,11 @@
  * Functions for generating CSV and text exports of trip data.
  */
 
+import { formatCurrency, formatDate } from '@/lib/utils/format';
+
+export { formatCurrency, formatDate };
+
 export type CSVRow = Record<string, string | number | boolean>;
-
-/**
- * Format a number as USD currency
- */
-export function formatCurrency(amount: number): string {
-  const isNegative = amount < 0;
-  const absAmount = Math.abs(amount);
-  const formatted = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(absAmount);
-
-  return isNegative ? `-${formatted}` : formatted;
-}
-
-/**
- * Format a date for display
- */
-export function formatDate(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date + 'T12:00:00') : date;
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
 
 /**
  * Escape a value for CSV

@@ -4,28 +4,19 @@ import { z } from 'zod';
 import { requireTripAccess } from '@/lib/auth/guards';
 import { createMedia, listMedia } from '@/lib/db/operations/media';
 import { ExifDataSchema, MediaTypes, type Media } from '@/lib/db/models';
-
-/**
- * API Response interface.
- */
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
+import {
+  type ApiResponse,
+  isValidObjectId,
+  errorResponse,
+  successResponse,
+  handleTripAccessError,
+} from '@/lib/api';
 
 /**
  * Route context with params.
  */
 interface RouteContext {
   params: Promise<{ tripId: string }>;
-}
-
-/**
- * Validate ObjectId format.
- */
-function isValidObjectId(id: string): boolean {
-  return /^[a-fA-F0-9]{24}$/.test(id);
 }
 
 /**
@@ -58,22 +49,15 @@ export async function GET(
 
     // Validate tripId format
     if (!isValidObjectId(tripId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid tripId format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid tripId format', 400);
     }
 
     // Check trip access
     try {
       await requireTripAccess(tripId);
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Forbidden')) {
-        return NextResponse.json(
-          { success: false, error: error.message },
-          { status: 403 }
-        );
-      }
+      const accessError = handleTripAccessError(error);
+      if (accessError) return accessError;
       throw error;
     }
 
@@ -84,18 +68,12 @@ export async function GET(
 
     // Validate type filter if provided
     if (type && !MediaTypes.includes(type as (typeof MediaTypes)[number])) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid type filter: must be photo or video' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid type filter: must be photo or video', 400);
     }
 
     // Validate uploadedBy ObjectId format if provided
     if (uploadedBy && !isValidObjectId(uploadedBy)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid uploadedBy format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid uploadedBy format', 400);
     }
 
     // Build filter
@@ -114,18 +92,12 @@ export async function GET(
     // Fetch media
     const result = await listMedia(filter as any, { sort: { createdAt: -1 } });
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    });
+    return successResponse(result.data);
   } catch (error) {
     console.error('GET /api/trips/[tripId]/media error:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
-      },
-      { status: 500 }
+    return errorResponse(
+      error instanceof Error ? error.message : 'Internal server error',
+      500
     );
   }
 }
@@ -144,10 +116,7 @@ export async function POST(
 
     // Validate tripId format
     if (!isValidObjectId(tripId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid tripId format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid tripId format', 400);
     }
 
     // Check trip access
@@ -156,12 +125,8 @@ export async function POST(
       const result = await requireTripAccess(tripId);
       attendee = result.attendee;
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Forbidden')) {
-        return NextResponse.json(
-          { success: false, error: error.message },
-          { status: 403 }
-        );
-      }
+      const accessError = handleTripAccessError(error);
+      if (accessError) return accessError;
       throw error;
     }
 
@@ -171,9 +136,9 @@ export async function POST(
 
     if (!parseResult.success) {
       const firstError = parseResult.error.errors[0];
-      return NextResponse.json(
-        { success: false, error: `Invalid request: ${firstError.path.join('.')} - ${firstError.message}` },
-        { status: 400 }
+      return errorResponse(
+        `Invalid request: ${firstError.path.join('.')} - ${firstError.message}`,
+        400
       );
     }
 
@@ -190,18 +155,12 @@ export async function POST(
       tags: parseResult.data.tags,
     });
 
-    return NextResponse.json(
-      { success: true, data: media },
-      { status: 201 }
-    );
+    return successResponse(media, 201);
   } catch (error) {
     console.error('POST /api/trips/[tripId]/media error:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
-      },
-      { status: 500 }
+    return errorResponse(
+      error instanceof Error ? error.message : 'Internal server error',
+      500
     );
   }
 }

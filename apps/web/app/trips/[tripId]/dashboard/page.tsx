@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button, Spinner, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import { PageHeader } from '@/components/navigation';
 import { AttendeeCard, ActivityCard } from '@/components/domain';
+import { formatCurrency } from '@/lib/utils/format';
 
 interface Attendee {
   id: string;
@@ -99,16 +100,6 @@ export default function DashboardPage() {
 
     fetchData();
   }, [tripId]);
-
-  const formatCurrency = (amount: number) => {
-    return `$${Math.abs(amount).toFixed(2)}`;
-  };
-
-  const formatBalance = (amount: number) => {
-    if (amount > 0) return `+${formatCurrency(amount)}`;
-    if (amount < 0) return `-${formatCurrency(Math.abs(amount))}`;
-    return formatCurrency(0);
-  };
 
   if (loading) {
     return (

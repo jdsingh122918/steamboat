@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { formatCurrency } from '@/lib/utils/format';
 
 interface ExpenseCategory {
   category: string;
@@ -44,13 +45,6 @@ export function TripStatsCard({
   loading = false,
   className = '',
 }: TripStatsCardProps) {
-  const formatCurrency = (cents: number): string => {
-    return `$${(cents / 100).toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-  };
-
   const getPercentage = (value: number, total: number): number => {
     if (total === 0) return 0;
     return Math.round((value / total) * 100);
@@ -93,7 +87,7 @@ export function TripStatsCard({
         <h3 className="section-title">Overview</h3>
         <div className="stat-grid">
           <div className="stat-item">
-            <span className="stat-value">{formatCurrency(stats.totalExpenses)}</span>
+            <span className="stat-value">{formatCurrency(stats.totalExpenses, { isCents: true })}</span>
             <span className="stat-label">Total Expenses</span>
           </div>
           <div className="stat-item">
@@ -144,7 +138,7 @@ export function TripStatsCard({
                     />
                   </div>
                   <span className="category-amount">
-                    {formatCurrency(cat.amount_cents)}
+                    {formatCurrency(cat.amount_cents, { isCents: true })}
                   </span>
                 </div>
               );
@@ -159,13 +153,13 @@ export function TripStatsCard({
           <div className="payment-item settled">
             <span className="payment-label">Settled</span>
             <span className="payment-amount">
-              {formatCurrency(stats.paymentStatus.settled)}
+              {formatCurrency(stats.paymentStatus.settled, { isCents: true })}
             </span>
           </div>
           <div className="payment-item pending">
             <span className="payment-label">Pending</span>
             <span className="payment-amount">
-              {formatCurrency(stats.paymentStatus.pending)}
+              {formatCurrency(stats.paymentStatus.pending, { isCents: true })}
             </span>
           </div>
         </div>

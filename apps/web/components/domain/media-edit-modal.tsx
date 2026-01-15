@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@/components/ui';
 import { TagInput } from './tag-input';
+import { formatDateShort } from '@/lib/utils/format';
 
 interface MediaData {
   id: string;
@@ -27,11 +28,6 @@ interface MediaEditModalProps {
   suggestedTags?: string[];
   className?: string;
 }
-
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-};
 
 export function MediaEditModal({
   isOpen,
@@ -99,7 +95,7 @@ export function MediaEditModal({
 
           <div className="media-edit-info">
             <span className="media-edit-uploader">Uploaded by {media.uploadedBy}</span>
-            <span className="media-edit-date">{formatDate(media.uploadedAt)}</span>
+            <span className="media-edit-date">{formatDateShort(media.uploadedAt)}</span>
           </div>
 
           <div className="media-edit-form">

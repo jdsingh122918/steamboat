@@ -9,6 +9,7 @@ import { ExpenseCard, SettleUpModal } from '@/components/domain';
 import type { Settlement as SettlementType, PaymentData } from '@/components/domain/settle-up-modal';
 import type { PaymentHandles } from '@/lib/db/models/attendee';
 import { useTripRealtime } from '@/hooks';
+import { formatCurrency } from '@/lib/utils/format';
 
 interface Expense {
   id: string;
@@ -192,13 +193,9 @@ export default function FinancesPage() {
     fetchData();
   }, [tripId]);
 
-  const formatCurrency = (amount: number) => {
-    return `$${Math.abs(amount).toFixed(2)}`;
-  };
-
-  const formatBalance = (amount: number) => {
+  const formatBalance = (amount: number): string => {
     if (amount > 0) return `+${formatCurrency(amount)}`;
-    if (amount < 0) return `-${formatCurrency(Math.abs(amount))}`;
+    if (amount < 0) return formatCurrency(amount);
     return formatCurrency(0);
   };
 

@@ -15,22 +15,13 @@ import {
 import { ExpenseCategories, ExpenseStatuses, type Expense } from '@/lib/db/models';
 import { triggerTripEvent } from '@/lib/pusher-server';
 import { PusherEventType } from '@/lib/pusher';
-
-/**
- * Standard API response interface.
- */
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
-/**
- * Validate MongoDB ObjectId format.
- */
-function isValidObjectId(id: string): boolean {
-  return ObjectId.isValid(id) && new ObjectId(id).toString() === id;
-}
+import {
+  type ApiResponse,
+  isValidObjectId,
+  errorResponse,
+  successResponse,
+  handleTripAccessError,
+} from '@/lib/api';
 
 /**
  * Serialize an expense for JSON response.
@@ -88,22 +79,15 @@ export async function GET(
 
     // Validate tripId format
     if (!isValidObjectId(tripId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid tripId format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid tripId format', 400);
     }
 
     // Verify trip access
     try {
       await requireTripAccess(tripId);
     } catch (error) {
-      if (error instanceof Error && error.message.startsWith('Forbidden:')) {
-        return NextResponse.json(
-          { success: false, error: error.message },
-          { status: 403 }
-        );
-      }
+      const accessError = handleTripAccessError(error);
+      if (accessError) return accessError;
       throw error;
     }
 
@@ -122,12 +106,9 @@ export async function GET(
     // Validate and add category filter
     if (category) {
       if (!ExpenseCategories.includes(category as typeof ExpenseCategories[number])) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Invalid category. Must be one of: ${ExpenseCategories.join(', ')}`,
-          },
-          { status: 400 }
+        return errorResponse(
+          `Invalid category. Must be one of: ${ExpenseCategories.join(', ')}`,
+          400
         );
       }
       filter.category = category;
@@ -136,10 +117,7 @@ export async function GET(
     // Validate and add paidBy filter
     if (paidBy) {
       if (!isValidObjectId(paidBy)) {
-        return NextResponse.json(
-          { success: false, error: 'Invalid paidBy format' },
-          { status: 400 }
-        );
+        return errorResponse('Invalid paidBy format', 400);
       }
       filter.payerId = new ObjectId(paidBy);
     }
@@ -147,12 +125,9 @@ export async function GET(
     // Validate and add status filter
     if (status) {
       if (!ExpenseStatuses.includes(status as typeof ExpenseStatuses[number])) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Invalid status. Must be one of: ${ExpenseStatuses.join(', ')}`,
-          },
-          { status: 400 }
+        return errorResponse(
+          `Invalid status. Must be one of: ${ExpenseStatuses.join(', ')}`,
+          400
         );
       }
       filter.status = status;
@@ -161,16 +136,10 @@ export async function GET(
     // Get expenses
     const result = await listExpenses(filter as any, { limit: 1000 });
 
-    return NextResponse.json({
-      success: true,
-      data: result.data.map(serializeExpense),
-    });
+    return successResponse(result.data.map(serializeExpense));
   } catch (error) {
     console.error('GET /api/trips/[tripId]/expenses error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch expenses' },
-      { status: 500 }
-    );
+    return errorResponse('Failed to fetch expenses', 500);
   }
 }
 
@@ -197,22 +166,15 @@ export async function POST(
 
     // Validate tripId format
     if (!isValidObjectId(tripId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid tripId format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid tripId format', 400);
     }
 
     // Verify trip access (any member can create expenses)
     try {
       await requireTripAccess(tripId);
     } catch (error) {
-      if (error instanceof Error && error.message.startsWith('Forbidden:')) {
-        return NextResponse.json(
-          { success: false, error: error.message },
-          { status: 403 }
-        );
-      }
+      const accessError = handleTripAccessError(error);
+      if (accessError) return accessError;
       throw error;
     }
 
@@ -231,55 +193,34 @@ export async function POST(
 
     // Validate required fields
     if (!description || typeof description !== 'string' || description.trim() === '') {
-      return NextResponse.json(
-        { success: false, error: 'description is required and must be a non-empty string' },
-        { status: 400 }
-      );
+      return errorResponse('description is required and must be a non-empty string', 400);
     }
 
     if (amount_cents === undefined || amount_cents === null) {
-      return NextResponse.json(
-        { success: false, error: 'amount_cents is required' },
-        { status: 400 }
-      );
+      return errorResponse('amount_cents is required', 400);
     }
 
     if (typeof amount_cents !== 'number' || !Number.isInteger(amount_cents) || amount_cents < 0) {
-      return NextResponse.json(
-        { success: false, error: 'amount_cents must be a non-negative integer' },
-        { status: 400 }
-      );
+      return errorResponse('amount_cents must be a non-negative integer', 400);
     }
 
     if (!category) {
-      return NextResponse.json(
-        { success: false, error: 'category is required' },
-        { status: 400 }
-      );
+      return errorResponse('category is required', 400);
     }
 
     if (!ExpenseCategories.includes(category)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Invalid category. Must be one of: ${ExpenseCategories.join(', ')}`,
-        },
-        { status: 400 }
+      return errorResponse(
+        `Invalid category. Must be one of: ${ExpenseCategories.join(', ')}`,
+        400
       );
     }
 
     if (!paidById) {
-      return NextResponse.json(
-        { success: false, error: 'paidById is required' },
-        { status: 400 }
-      );
+      return errorResponse('paidById is required', 400);
     }
 
     if (!isValidObjectId(paidById)) {
-      return NextResponse.json(
-        { success: false, error: 'paidById must be a valid ObjectId' },
-        { status: 400 }
-      );
+      return errorResponse('paidById must be a valid ObjectId', 400);
     }
 
     // Validate date if provided
@@ -287,10 +228,7 @@ export async function POST(
     if (date) {
       expenseDate = new Date(date);
       if (isNaN(expenseDate.getTime())) {
-        return NextResponse.json(
-          { success: false, error: 'date must be a valid ISO date string' },
-          { status: 400 }
-        );
+        return errorResponse('date must be a valid ISO date string', 400);
       }
     }
 
@@ -302,48 +240,33 @@ export async function POST(
         // Validate all participant IDs
         for (const id of participantIds) {
           if (!isValidObjectId(id)) {
-            return NextResponse.json(
-              { success: false, error: `Invalid participant ID: ${id}` },
-              { status: 400 }
-            );
+            return errorResponse(`Invalid participant ID: ${id}`, 400);
           }
         }
         participants = calculateEqualShares(amount_cents, participantIds);
       }
     } else if (splitType === 'custom') {
       if (!customParticipants || !Array.isArray(customParticipants)) {
-        return NextResponse.json(
-          { success: false, error: 'participants array is required for custom split' },
-          { status: 400 }
-        );
+        return errorResponse('participants array is required for custom split', 400);
       }
 
       // Validate each participant has share_cents
       let totalShares = 0;
       for (const p of customParticipants) {
         if (!p.attendeeId || !isValidObjectId(p.attendeeId)) {
-          return NextResponse.json(
-            { success: false, error: 'Each participant must have a valid attendeeId' },
-            { status: 400 }
-          );
+          return errorResponse('Each participant must have a valid attendeeId', 400);
         }
         if (typeof p.share_cents !== 'number' || p.share_cents < 0) {
-          return NextResponse.json(
-            { success: false, error: 'Each participant must have a non-negative share_cents' },
-            { status: 400 }
-          );
+          return errorResponse('Each participant must have a non-negative share_cents', 400);
         }
         totalShares += p.share_cents;
       }
 
       // Validate shares sum to total
       if (totalShares !== amount_cents) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Custom shares must sum to amount_cents (${amount_cents}). Current sum: ${totalShares}`,
-          },
-          { status: 400 }
+        return errorResponse(
+          `Custom shares must sum to amount_cents (${amount_cents}). Current sum: ${totalShares}`,
+          400
         );
       }
 
@@ -354,38 +277,26 @@ export async function POST(
       }));
     } else if (splitType === 'percentage') {
       if (!customParticipants || !Array.isArray(customParticipants)) {
-        return NextResponse.json(
-          { success: false, error: 'participants array is required for percentage split' },
-          { status: 400 }
-        );
+        return errorResponse('participants array is required for percentage split', 400);
       }
 
       // Validate each participant has percentage
       let totalPercentage = 0;
       for (const p of customParticipants) {
         if (!p.attendeeId || !isValidObjectId(p.attendeeId)) {
-          return NextResponse.json(
-            { success: false, error: 'Each participant must have a valid attendeeId' },
-            { status: 400 }
-          );
+          return errorResponse('Each participant must have a valid attendeeId', 400);
         }
         if (typeof p.percentage !== 'number' || p.percentage < 0 || p.percentage > 100) {
-          return NextResponse.json(
-            { success: false, error: 'Each participant must have a percentage between 0 and 100' },
-            { status: 400 }
-          );
+          return errorResponse('Each participant must have a percentage between 0 and 100', 400);
         }
         totalPercentage += p.percentage;
       }
 
       // Validate percentages sum to 100
       if (Math.abs(totalPercentage - 100) > 0.01) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Percentages must sum to 100. Current sum: ${totalPercentage}`,
-          },
-          { status: 400 }
+        return errorResponse(
+          `Percentages must sum to 100. Current sum: ${totalPercentage}`,
+          400
         );
       }
 
@@ -404,13 +315,7 @@ export async function POST(
         };
       });
     } else {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "splitType must be one of: 'equal', 'custom', 'percentage'",
-        },
-        { status: 400 }
-      );
+      return errorResponse("splitType must be one of: 'equal', 'custom', 'percentage'", 400);
     }
 
     // Create the expense
@@ -433,18 +338,9 @@ export async function POST(
       expense: serializedExpense,
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: serializedExpense,
-      },
-      { status: 201 }
-    );
+    return successResponse(serializedExpense, 201);
   } catch (error) {
     console.error('POST /api/trips/[tripId]/expenses error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to create expense' },
-      { status: 500 }
-    );
+    return errorResponse('Failed to create expense', 500);
   }
 }

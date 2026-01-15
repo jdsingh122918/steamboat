@@ -4,20 +4,17 @@
  * AI agent for organizing and tagging media files.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import {
   AgentRole,
-  AgentStatus,
   AgentRoleType,
-  AgentStatusType,
   AgentResult,
   MediaOrganization,
   createSuccessResult,
   createErrorResult,
 } from './types';
-import { getAgentConfig, AgentModel } from './config';
-import { getSystemPrompt } from './prompts';
-import { getGlobalCostTracker } from './cost-tracker';
+import { AgentModel } from './config';
+import { BaseAgent } from './base-agent';
+import { parseJsonResponse } from './parse-json-response';
 
 export interface MediaItem {
   id: string;
@@ -62,39 +59,32 @@ export function groupMediaByDate(
 /**
  * Gallery Organizer Agent class
  */
-export class GalleryOrganizer {
-  private client: Anthropic;
-  private status: AgentStatusType = AgentStatus.IDLE;
-  private role: AgentRoleType = AgentRole.GALLERY_ORGANIZER;
+export class GalleryOrganizer extends BaseAgent<OrganizeInput, OrganizationResult> {
+  protected readonly role: AgentRoleType = AgentRole.GALLERY_ORGANIZER;
 
-  constructor() {
-    const config = getAgentConfig();
-    this.client = new Anthropic({ apiKey: config.apiKey });
+  /**
+   * Process input using organize
+   */
+  async process(input: OrganizeInput): Promise<AgentResult<OrganizationResult>> {
+    return this.organize(input);
   }
 
-  getStatus(): AgentStatusType {
-    return this.status;
-  }
-
-  getRole(): AgentRoleType {
-    return this.role;
-  }
-
+  /**
+   * Organize media and suggest tags/albums
+   */
   async organize(input: OrganizeInput): Promise<AgentResult<OrganizationResult>> {
-    this.status = AgentStatus.PROCESSING;
+    this.setProcessing();
 
-    try {
-      const systemPrompt = getSystemPrompt(this.role);
-      const dateGroups = groupMediaByDate(input.media);
+    const dateGroups = groupMediaByDate(input.media);
 
-      const response = await this.client.messages.create({
-        model: AgentModel.HAIKU,
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: `Please suggest organization for these media files:
+    const result = await this.executeWithTracking({
+      model: AgentModel.HAIKU,
+      maxTokens: 1024,
+      tripId: input.tripId,
+      messages: [
+        {
+          role: 'user',
+          content: `Please suggest organization for these media files:
 
 Media Items: ${JSON.stringify(input.media.slice(0, 20), null, 2)}
 Date Groups: ${JSON.stringify(dateGroups)}
@@ -103,46 +93,22 @@ Trip: ${input.tripName || 'Trip'}
 Return JSON with:
 - suggestions: array of { mediaId, suggestedTags, suggestedAlbum }
 - albums: suggested album names`,
-          },
-        ],
-      });
+        },
+      ],
+    });
 
-      const costTracker = getGlobalCostTracker();
-      costTracker.recordUsage({
-        model: AgentModel.HAIKU,
-        role: this.role,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
-        tripId: input.tripId,
-      });
-
-      const textContent = response.content.find((c) => c.type === 'text');
-      if (!textContent || textContent.type !== 'text') {
-        this.status = AgentStatus.ERROR;
-        return createErrorResult('No text content in response');
-      }
-
-      const parsed = parseOrganizationResponse(textContent.text);
-      if (!parsed) {
-        this.status = AgentStatus.ERROR;
-        return createErrorResult('Failed to parse response');
-      }
-
-      this.status = AgentStatus.COMPLETED;
-      return createSuccessResult(parsed);
-    } catch (error) {
-      this.status = AgentStatus.ERROR;
-      return createErrorResult(error instanceof Error ? error.message : 'Unknown error');
+    if (!result.success) {
+      this.setError();
+      return createErrorResult(result.error);
     }
-  }
-}
 
-function parseOrganizationResponse(response: string): OrganizationResult | null {
-  try {
-    const match = response.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
-    return JSON.parse(response.trim());
-  } catch {
-    return null;
+    const parsed = parseJsonResponse<OrganizationResult>(result.data.text);
+    if (!parsed) {
+      this.setError();
+      return createErrorResult('Failed to parse response');
+    }
+
+    this.setCompleted();
+    return createSuccessResult(parsed);
   }
 }

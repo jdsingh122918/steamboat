@@ -4,20 +4,17 @@
  * AI agent for analyzing polls and facilitating group decisions.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import {
   AgentRole,
-  AgentStatus,
   AgentRoleType,
-  AgentStatusType,
   AgentResult,
   PollAnalysis,
   createSuccessResult,
   createErrorResult,
 } from './types';
-import { getAgentConfig, AgentModel } from './config';
-import { getSystemPrompt } from './prompts';
-import { getGlobalCostTracker } from './cost-tracker';
+import { AgentModel } from './config';
+import { BaseAgent } from './base-agent';
+import { parseJsonResponse } from './parse-json-response';
 
 export interface AnalyzePollInput {
   pollId: string;
@@ -62,39 +59,32 @@ export function calculateVoteStats(votes: Record<string, number>): VoteStats {
 /**
  * Poll Decision Agent class
  */
-export class PollDecisionAgent {
-  private client: Anthropic;
-  private status: AgentStatusType = AgentStatus.IDLE;
-  private role: AgentRoleType = AgentRole.POLL_DECISION;
+export class PollDecisionAgent extends BaseAgent<AnalyzePollInput, PollAnalysis> {
+  protected readonly role: AgentRoleType = AgentRole.POLL_DECISION;
 
-  constructor() {
-    const config = getAgentConfig();
-    this.client = new Anthropic({ apiKey: config.apiKey });
+  /**
+   * Process input using analyze
+   */
+  async process(input: AnalyzePollInput): Promise<AgentResult<PollAnalysis>> {
+    return this.analyze(input);
   }
 
-  getStatus(): AgentStatusType {
-    return this.status;
-  }
-
-  getRole(): AgentRoleType {
-    return this.role;
-  }
-
+  /**
+   * Analyze poll results
+   */
   async analyze(input: AnalyzePollInput): Promise<AgentResult<PollAnalysis>> {
-    this.status = AgentStatus.PROCESSING;
+    this.setProcessing();
 
-    try {
-      const systemPrompt = getSystemPrompt(this.role);
-      const stats = calculateVoteStats(input.votes);
+    const stats = calculateVoteStats(input.votes);
 
-      const response = await this.client.messages.create({
-        model: AgentModel.HAIKU,
-        max_tokens: 512,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: `Analyze this poll and provide insights:
+    const result = await this.executeWithTracking({
+      model: AgentModel.HAIKU,
+      maxTokens: 512,
+      tripId: input.tripId,
+      messages: [
+        {
+          role: 'user',
+          content: `Analyze this poll and provide insights:
 
 Question: ${input.question}
 Options: ${input.options.join(', ')}
@@ -108,46 +98,22 @@ Return JSON with:
 - voteCounts: object
 - recommendation: string
 - confidence: number (0-1)`,
-          },
-        ],
-      });
+        },
+      ],
+    });
 
-      const costTracker = getGlobalCostTracker();
-      costTracker.recordUsage({
-        model: AgentModel.HAIKU,
-        role: this.role,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
-        tripId: input.tripId,
-      });
-
-      const textContent = response.content.find((c) => c.type === 'text');
-      if (!textContent || textContent.type !== 'text') {
-        this.status = AgentStatus.ERROR;
-        return createErrorResult('No text content in response');
-      }
-
-      const parsed = parsePollResponse(textContent.text);
-      if (!parsed) {
-        this.status = AgentStatus.ERROR;
-        return createErrorResult('Failed to parse response');
-      }
-
-      this.status = AgentStatus.COMPLETED;
-      return createSuccessResult(parsed);
-    } catch (error) {
-      this.status = AgentStatus.ERROR;
-      return createErrorResult(error instanceof Error ? error.message : 'Unknown error');
+    if (!result.success) {
+      this.setError();
+      return createErrorResult(result.error);
     }
-  }
-}
 
-function parsePollResponse(response: string): PollAnalysis | null {
-  try {
-    const match = response.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
-    return JSON.parse(response.trim());
-  } catch {
-    return null;
+    const parsed = parseJsonResponse<PollAnalysis>(result.data.text);
+    if (!parsed) {
+      this.setError();
+      return createErrorResult('Failed to parse response');
+    }
+
+    this.setCompleted();
+    return createSuccessResult(parsed);
   }
 }

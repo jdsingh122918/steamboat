@@ -12,6 +12,7 @@ import {
 } from '@react-email/components';
 import * as React from 'react';
 import { BaseLayout } from './base-layout';
+import { formatCurrency } from '@/lib/utils/format';
 
 /**
  * Expense breakdown item.
@@ -41,21 +42,6 @@ export interface PaymentReminderEmailProps {
   dueDate?: string;
   /** Optional expense breakdown */
   expenseBreakdown?: ExpenseItem[];
-}
-
-/**
- * Format currency amount.
- */
-function formatCurrency(amount: number, currency: string = 'USD'): string {
-  const symbols: Record<string, string> = {
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-    CAD: 'CA$',
-    AUD: 'A$',
-  };
-  const symbol = symbols[currency] || currency + ' ';
-  return `${symbol}${amount.toFixed(2)}`;
 }
 
 /**
@@ -166,7 +152,7 @@ export function PaymentReminderEmail({
   dueDate,
   expenseBreakdown,
 }: PaymentReminderEmailProps) {
-  const formattedAmount = formatCurrency(amountOwed, currency);
+  const formattedAmount = formatCurrency(amountOwed, { currency });
   const previewText = `Friendly reminder: You owe ${formattedAmount} for ${tripName}`;
 
   return (
@@ -192,7 +178,7 @@ export function PaymentReminderEmail({
           {expenseBreakdown.map((item, index) => (
             <Text key={index} style={styles.breakdownItem}>
               <span>{item.description}</span>
-              <span>{formatCurrency(item.amount, currency)}</span>
+              <span>{formatCurrency(item.amount, { currency })}</span>
             </Text>
           ))}
         </Section>

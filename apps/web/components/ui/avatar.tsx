@@ -1,6 +1,7 @@
 'use client';
 
 import React, { forwardRef, useState, Children, cloneElement, isValidElement } from 'react';
+import { getInitials } from '@/lib/utils/format';
 
 export interface AvatarProps {
   src?: string;
@@ -11,14 +12,6 @@ export interface AvatarProps {
   status?: 'online' | 'offline' | 'away' | 'busy';
   fallback?: React.ReactNode;
   className?: string;
-}
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) {
-    return parts[0].charAt(0).toUpperCase();
-  }
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
 function FallbackIcon() {
