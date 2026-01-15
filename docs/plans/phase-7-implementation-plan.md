@@ -828,13 +828,15 @@ apps/web/components/domain/__tests__/bulk-download-button.test.tsx
 
 **Files Created:**
 ```
-apps/web/components/domain/photo-download-button.tsx
-apps/web/components/domain/__tests__/photo-download-button.test.tsx
+apps/web/lib/download/single-download.ts
+apps/web/lib/download/__tests__/single-download.test.ts
+apps/web/components/domain/download-button.tsx
+apps/web/components/domain/__tests__/download-button.test.tsx
 ```
 
 **Tasks:**
-- [x] Write PhotoDownloadButton component tests
-- [x] Implement PhotoDownloadButton
+- [x] Write DownloadButton component tests
+- [x] Implement DownloadButton
 - [x] Add to media viewer modal
 - [x] Verify: Photo downloads correctly
 
