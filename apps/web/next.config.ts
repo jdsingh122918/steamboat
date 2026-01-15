@@ -31,15 +31,28 @@ const nextConfig: NextConfig = {
       };
     }
 
-    // Prevent WASM modules from being bundled on server
+    // In CI, use mocks instead of WASM modules
+    const isCI = process.env.CI === 'true';
     if (isServer) {
-      config.externals = config.externals || [];
-      if (Array.isArray(config.externals)) {
-        config.externals.push({
-          'expense-optimizer': 'expense-optimizer',
-          'finance-core': 'finance-core',
-          'media-processor': 'media-processor',
-        });
+      if (isCI) {
+        // Use mock implementations in CI where WASM isn't built
+        const mocksDir = path.resolve(__dirname, '__mocks__');
+        config.resolve.alias = {
+          ...config.resolve.alias,
+          'expense-optimizer': path.join(mocksDir, 'expense-optimizer.ts'),
+          'finance-core': path.join(mocksDir, 'finance-core.ts'),
+          'media-processor': path.join(mocksDir, 'media-processor.ts'),
+        };
+      } else {
+        // In production, externalize WASM modules
+        config.externals = config.externals || [];
+        if (Array.isArray(config.externals)) {
+          config.externals.push({
+            'expense-optimizer': 'expense-optimizer',
+            'finance-core': 'finance-core',
+            'media-processor': 'media-processor',
+          });
+        }
       }
     }
 
