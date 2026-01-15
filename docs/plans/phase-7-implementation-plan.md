@@ -32,6 +32,7 @@
 - `apps/web/components/domain/payment-method-selector.tsx` (7.1.2)
 - `apps/web/components/domain/media-edit-modal.tsx` (7.3.1)
 - `apps/web/components/domain/poll-results-summary.tsx` (7.2.4)
+- `apps/web/components/domain/trip-recap-card.tsx` (7.6.2)
 - `apps/web/components/domain/profile-picture-upload.tsx` (7.7.1)
 - `apps/web/components/domain/trip-banner-upload.tsx` (7.7.2)
 - `apps/web/components/domain/share-button.tsx` (7.7.3)
