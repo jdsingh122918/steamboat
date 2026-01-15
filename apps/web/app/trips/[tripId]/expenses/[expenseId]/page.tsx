@@ -260,7 +260,8 @@ export default function ExpenseDetailPage() {
       <PageHeader
         title={expense.description}
         subtitle={formatCurrency(expense.amount_cents)}
-        backUrl={`/trips/${tripId}/finances`}
+        showBack
+        onBack={() => router.push(`/trips/${tripId}/finances`)}
         actions={
           canFileDispute && !showDisputeForm && (
             <Button

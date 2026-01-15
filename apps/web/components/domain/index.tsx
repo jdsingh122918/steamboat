@@ -496,6 +496,15 @@ export { DisputeForm } from './dispute-form';
 export type { DisputeFormProps, DisputeData, DisputeType } from './dispute-form';
 export { DisputeCard } from './dispute-card';
 export type { DisputeCardProps, Dispute, DisputeStatus } from './dispute-card';
+
+// Phase 7.5: Export Enhancements
+export { ExportPDFButton } from './export-pdf-button';
+export type { ExportPDFButtonProps } from './export-pdf-button';
+export { BulkDownloadButton } from './bulk-download-button';
+export type { BulkDownloadButtonProps } from './bulk-download-button';
+export { DownloadButton } from './download-button';
+export type { DownloadButtonProps } from './download-button';
+
 export type {
   ExpenseCardProps,
   ExpenseCategory,

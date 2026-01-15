@@ -2,6 +2,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SettleUpModal } from '../settle-up-modal';
 
+// Mock the payment-links module
+vi.mock('@/lib/utils/payment-links', () => ({
+  openPaymentLink: vi.fn().mockResolvedValue({ opened: true, link: 'https://venmo.com/pay/@janesmith/50.00' }),
+  copyToClipboard: vi.fn().mockResolvedValue(true),
+  supportsDeepLink: vi.fn().mockImplementation((method: string) => ['venmo', 'paypal', 'cashapp'].includes(method)),
+  getPaymentMethodDisplayName: vi.fn().mockImplementation((method: string) => {
+    const names: Record<string, string> = { venmo: 'Venmo', paypal: 'PayPal', cashapp: 'Cash App', zelle: 'Zelle', cash: 'Cash', other: 'Other' };
+    return names[method] || method;
+  }),
+}));
+
+import { openPaymentLink } from '@/lib/utils/payment-links';
+
 // Helper to simulate typing
 const typeInInput = (input: HTMLElement, text: string) => {
   fireEvent.change(input, { target: { value: text } });
@@ -10,7 +23,7 @@ const typeInInput = (input: HTMLElement, text: string) => {
 describe('SettleUpModal', () => {
   const mockOnClose = vi.fn();
   const mockOnPaymentComplete = vi.fn();
-  const mockGeneratePaymentLink = vi.fn();
+  const mockOpenPaymentLink = vi.mocked(openPaymentLink);
 
   const defaultProps = {
     isOpen: true,
@@ -33,7 +46,7 @@ describe('SettleUpModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGeneratePaymentLink.mockResolvedValue('https://venmo.com/pay/@janesmith/50.00');
+    mockOpenPaymentLink.mockResolvedValue({ opened: true, link: 'https://venmo.com/pay/@janesmith/50.00' });
   });
 
   describe('rendering', () => {
@@ -169,15 +182,17 @@ describe('SettleUpModal', () => {
   });
 
   describe('confirmation', () => {
-    it('should show confirmation checkbox', () => {
+    it('should show confirmation checkbox', async () => {
       render(<SettleUpModal {...defaultProps} />);
 
       fireEvent.click(screen.getByRole('button', { name: /venmo/i }));
 
-      // Click pay button to proceed to confirmation
+      // Click pay button to proceed to confirmation - wait for async transition
       fireEvent.click(screen.getByRole('button', { name: /pay.*venmo/i }));
 
-      expect(screen.getByRole('checkbox')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByRole('checkbox')).toBeInTheDocument();
+      });
     });
 
     it('should call onPaymentComplete after confirmation', async () => {
@@ -186,8 +201,12 @@ describe('SettleUpModal', () => {
       // Select Venmo
       fireEvent.click(screen.getByRole('button', { name: /venmo/i }));
 
-      // Click pay
+      // Click pay - wait for async transition
       fireEvent.click(screen.getByRole('button', { name: /pay.*venmo/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('checkbox')).toBeInTheDocument();
+      });
 
       // Confirm
       fireEvent.click(screen.getByRole('checkbox'));
@@ -207,6 +226,11 @@ describe('SettleUpModal', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /venmo/i }));
       fireEvent.click(screen.getByRole('button', { name: /pay.*venmo/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('checkbox')).toBeInTheDocument();
+      });
+
       fireEvent.click(screen.getByRole('checkbox'));
       fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
 
@@ -221,6 +245,11 @@ describe('SettleUpModal', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /venmo/i }));
       fireEvent.click(screen.getByRole('button', { name: /pay.*venmo/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('checkbox')).toBeInTheDocument();
+      });
+
       fireEvent.click(screen.getByRole('checkbox'));
       fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
 
@@ -237,6 +266,11 @@ describe('SettleUpModal', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /venmo/i }));
       fireEvent.click(screen.getByRole('button', { name: /pay.*venmo/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('checkbox')).toBeInTheDocument();
+      });
+
       fireEvent.click(screen.getByRole('checkbox'));
       fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
 
@@ -261,6 +295,11 @@ describe('SettleUpModal', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /venmo/i }));
       fireEvent.click(screen.getByRole('button', { name: /pay.*venmo/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('checkbox')).toBeInTheDocument();
+      });
+
       fireEvent.click(screen.getByRole('checkbox'));
       fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
 

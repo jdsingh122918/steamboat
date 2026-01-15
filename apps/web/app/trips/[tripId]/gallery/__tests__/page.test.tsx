@@ -180,7 +180,7 @@ describe('GalleryPage', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /upload/i }));
       await waitFor(() => {
-        expect(screen.getByTestId('upload-modal')).toBeInTheDocument();
+        expect(screen.getByTestId('media-upload-modal')).toBeInTheDocument();
       });
     });
   });

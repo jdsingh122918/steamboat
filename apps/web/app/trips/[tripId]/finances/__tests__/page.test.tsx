@@ -50,18 +50,18 @@ const mockBalances = {
 
 const mockSettlements = [
   {
-    id: 'set1',
-    from: { id: 'att2', name: 'Jane Smith' },
-    to: { id: 'att1', name: 'John Doe' },
-    amount: 75.00,
-    status: 'pending',
+    from: 'att2',
+    fromName: 'Jane Smith',
+    to: 'att1',
+    toName: 'John Doe',
+    amount_cents: 7500,
   },
   {
-    id: 'set2',
-    from: { id: 'att3', name: 'Bob Wilson' },
-    to: { id: 'att1', name: 'John Doe' },
-    amount: 75.00,
-    status: 'pending',
+    from: 'att3',
+    fromName: 'Bob Wilson',
+    to: 'att1',
+    toName: 'John Doe',
+    amount_cents: 7500,
   },
 ];
 
@@ -71,7 +71,15 @@ beforeEach(() => {
     if (url.includes('/settlements')) {
       return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({ success: true, data: { settlements: mockSettlements } }),
+        json: () => Promise.resolve({
+          success: true,
+          data: {
+            settlements: mockSettlements,
+            original_count: 2,
+            optimized_count: 2,
+            savings_percent: 0,
+          },
+        }),
       });
     }
     if (url.includes('/balances')) {
