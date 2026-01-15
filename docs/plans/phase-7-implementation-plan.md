@@ -10,7 +10,7 @@
 **Test Results:**
 - Phase 7.1 Payment Flow: 69 tests ⚠️ Components partial, profile page + payment-method-selector missing
 - Phase 7.2 Polls UI: 134 tests ⚠️ Components complete, some pages missing
-- Phase 7.3 Content Management: ~105 tests ⚠️ media-edit-modal missing
+- Phase 7.3 Content Management: ~105 tests ⚠️ media-edit-modal + expense edit page missing
 - Phase 7.4 Email System: 88 tests ✅ **COMPLETE**
 - Phase 7.5 Export Enhancements: 67 tests ✅ **COMPLETE**
 - Phase 7.6 Admin Features: 60 tests ⚠️ Components complete, pages missing
