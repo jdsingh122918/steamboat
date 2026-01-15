@@ -274,7 +274,7 @@ export async function downloadPhotosAsZip(
 **Tests:** 69 tests passing
 **Dependencies:** Existing payments API, attendee model with paymentHandles
 
-### 7.1.1 Payment Profile Editing ✅
+### 7.1.1 Payment Profile Editing ⚠️
 
 **Description:** Allow users to add/edit their payment handles (Venmo, PayPal, CashApp, Zelle).
 
@@ -474,7 +474,7 @@ describe('PollsPage', () => {
 });
 ```
 
-### 7.2.2 Poll Creation Form ✅
+### 7.2.2 Poll Creation Form ⚠️
 
 **Description:** Modal or page for creating new polls with question and options.
 
@@ -533,7 +533,7 @@ describe('PollCreationForm', () => {
 });
 ```
 
-### 7.2.3 Voting Interface ✅
+### 7.2.3 Voting Interface ⚠️
 
 **Description:** Interactive voting on polls with immediate feedback.
 
@@ -589,7 +589,7 @@ describe('PollVotingCard', () => {
 });
 ```
 
-### 7.2.4 Poll Closing and Decision Summary ✅
+### 7.2.4 Poll Closing and Decision Summary ⚠️
 
 **Description:** Admin ability to close polls and view decision summaries.
 
