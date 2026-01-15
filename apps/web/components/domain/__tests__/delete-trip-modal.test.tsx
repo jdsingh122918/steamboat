@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import { DeleteTripModal } from '../delete-trip-modal';
 
 describe('DeleteTripModal', () => {
@@ -17,6 +17,10 @@ describe('DeleteTripModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     global.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   describe('rendering', () => {
@@ -194,9 +198,11 @@ describe('DeleteTripModal', () => {
     });
 
     it('should show loading state while deleting', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: () => Promise.resolve({}) }), 100))
-      );
+      let resolvePromise: (value: { ok: boolean; json: () => Promise<object> }) => void;
+      const fetchPromise = new Promise<{ ok: boolean; json: () => Promise<object> }>((resolve) => {
+        resolvePromise = resolve;
+      });
+      (global.fetch as ReturnType<typeof vi.fn>).mockReturnValue(fetchPromise);
 
       render(<DeleteTripModal {...defaultProps} />);
       proceedToDelete();
@@ -205,12 +211,20 @@ describe('DeleteTripModal', () => {
       await waitFor(() => {
         expect(screen.getByText(/deleting/i)).toBeInTheDocument();
       });
+
+      // Complete the request to clean up
+      await act(async () => {
+        resolvePromise!({ ok: true, json: () => Promise.resolve({}) });
+        await fetchPromise;
+      });
     });
 
     it('should disable buttons while deleting', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: () => Promise.resolve({}) }), 100))
-      );
+      let resolvePromise: (value: { ok: boolean; json: () => Promise<object> }) => void;
+      const fetchPromise = new Promise<{ ok: boolean; json: () => Promise<object> }>((resolve) => {
+        resolvePromise = resolve;
+      });
+      (global.fetch as ReturnType<typeof vi.fn>).mockReturnValue(fetchPromise);
 
       render(<DeleteTripModal {...defaultProps} />);
       proceedToDelete();
@@ -220,12 +234,20 @@ describe('DeleteTripModal', () => {
         expect(screen.getByTestId('delete-button')).toBeDisabled();
         expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
       });
+
+      // Complete the request to clean up
+      await act(async () => {
+        resolvePromise!({ ok: true, json: () => Promise.resolve({}) });
+        await fetchPromise;
+      });
     });
 
     it('should disable input while deleting', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: () => Promise.resolve({}) }), 100))
-      );
+      let resolvePromise: (value: { ok: boolean; json: () => Promise<object> }) => void;
+      const fetchPromise = new Promise<{ ok: boolean; json: () => Promise<object> }>((resolve) => {
+        resolvePromise = resolve;
+      });
+      (global.fetch as ReturnType<typeof vi.fn>).mockReturnValue(fetchPromise);
 
       render(<DeleteTripModal {...defaultProps} />);
       proceedToDelete();
@@ -233,6 +255,12 @@ describe('DeleteTripModal', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('confirm-name-input')).toBeDisabled();
+      });
+
+      // Complete the request to clean up
+      await act(async () => {
+        resolvePromise!({ ok: true, json: () => Promise.resolve({}) });
+        await fetchPromise;
       });
     });
   });
@@ -333,9 +361,11 @@ describe('DeleteTripModal', () => {
     });
 
     it('should not close while deleting', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: () => Promise.resolve({}) }), 100))
-      );
+      let resolvePromise: (value: { ok: boolean; json: () => Promise<object> }) => void;
+      const fetchPromise = new Promise<{ ok: boolean; json: () => Promise<object> }>((resolve) => {
+        resolvePromise = resolve;
+      });
+      (global.fetch as ReturnType<typeof vi.fn>).mockReturnValue(fetchPromise);
 
       render(<DeleteTripModal {...defaultProps} />);
 
@@ -353,6 +383,12 @@ describe('DeleteTripModal', () => {
       fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
 
       expect(mockOnClose).not.toHaveBeenCalled();
+
+      // Complete the request to clean up
+      await act(async () => {
+        resolvePromise!({ ok: true, json: () => Promise.resolve({}) });
+        await fetchPromise;
+      });
     });
 
     it('should reset state when closed and reopened', () => {
