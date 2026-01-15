@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Input } from '@/components/ui';
+import { Button, Input, Skeleton } from '@/components/ui';
 
 interface FormErrors {
   invitationCode?: string;
@@ -16,7 +16,7 @@ interface PaymentHandles {
   cashapp: string;
 }
 
-export default function JoinPage() {
+function JoinForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -87,13 +87,126 @@ export default function JoinPage() {
       }
 
       router.push(`/trips/${data.tripId}/dashboard`);
-    } catch (error) {
+    } catch {
       setErrors({ general: 'An unexpected error occurred' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  return (
+    <form onSubmit={handleSubmit} className="join-page-form">
+      {errors.general && (
+        <div className="join-page-error" role="alert">
+          {errors.general}
+        </div>
+      )}
+
+      <Input
+        label="Invitation Code"
+        id="invitation-code"
+        value={invitationCode}
+        onChange={(e) => setInvitationCode(e.target.value)}
+        error={!!errors.invitationCode}
+        errorMessage={errors.invitationCode}
+        placeholder="Enter your invitation code"
+      />
+
+      <Input
+        label="Your Name"
+        id="name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        error={!!errors.name}
+        errorMessage={errors.name}
+        placeholder="Enter your name"
+      />
+
+      <div
+        className="join-page-payment-handles"
+        data-testid="payment-handles-section"
+        data-expanded={showPaymentHandles}
+      >
+        <button
+          type="button"
+          className="join-page-payment-toggle"
+          onClick={() => setShowPaymentHandles(!showPaymentHandles)}
+        >
+          Add Payment Info (Optional)
+          <svg
+            className={`join-page-payment-toggle-icon ${showPaymentHandles ? 'expanded' : ''}`}
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M4 6l4 4 4-4" />
+          </svg>
+        </button>
+
+        {showPaymentHandles && (
+          <div className="join-page-payment-inputs">
+            <Input
+              label="Venmo"
+              id="venmo"
+              value={paymentHandles.venmo}
+              onChange={(e) =>
+                setPaymentHandles({ ...paymentHandles, venmo: e.target.value })
+              }
+              placeholder="@username"
+            />
+
+            <Input
+              label="PayPal"
+              id="paypal"
+              value={paymentHandles.paypal}
+              onChange={(e) =>
+                setPaymentHandles({ ...paymentHandles, paypal: e.target.value })
+              }
+              placeholder="email@example.com"
+            />
+
+            <Input
+              label="Cash App"
+              id="cashapp"
+              value={paymentHandles.cashapp}
+              onChange={(e) =>
+                setPaymentHandles({ ...paymentHandles, cashapp: e.target.value })
+              }
+              placeholder="$cashtag"
+            />
+          </div>
+        )}
+      </div>
+
+      <Button
+        type="submit"
+        variant="primary"
+        size="lg"
+        fullWidth
+        loading={isSubmitting}
+        disabled={isSubmitting}
+      >
+        Join
+      </Button>
+    </form>
+  );
+}
+
+function JoinFormSkeleton() {
+  return (
+    <div className="join-page-form">
+      <Skeleton height={72} className="mb-4" />
+      <Skeleton height={72} className="mb-4" />
+      <Skeleton height={48} className="mb-4" />
+      <Skeleton height={48} />
+    </div>
+  );
+}
+
+export default function JoinPage() {
   return (
     <div className="join-page">
       <div className="join-page-container">
@@ -104,103 +217,9 @@ export default function JoinPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="join-page-form">
-          {errors.general && (
-            <div className="join-page-error" role="alert">
-              {errors.general}
-            </div>
-          )}
-
-          <Input
-            label="Invitation Code"
-            id="invitation-code"
-            value={invitationCode}
-            onChange={(e) => setInvitationCode(e.target.value)}
-            error={!!errors.invitationCode}
-            errorMessage={errors.invitationCode}
-            placeholder="Enter your invitation code"
-          />
-
-          <Input
-            label="Your Name"
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            error={!!errors.name}
-            errorMessage={errors.name}
-            placeholder="Enter your name"
-          />
-
-          <div
-            className="join-page-payment-handles"
-            data-testid="payment-handles-section"
-            data-expanded={showPaymentHandles}
-          >
-            <button
-              type="button"
-              className="join-page-payment-toggle"
-              onClick={() => setShowPaymentHandles(!showPaymentHandles)}
-            >
-              Add Payment Info (Optional)
-              <svg
-                className={`join-page-payment-toggle-icon ${showPaymentHandles ? 'expanded' : ''}`}
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M4 6l4 4 4-4" />
-              </svg>
-            </button>
-
-            {showPaymentHandles && (
-              <div className="join-page-payment-inputs">
-                <Input
-                  label="Venmo"
-                  id="venmo"
-                  value={paymentHandles.venmo}
-                  onChange={(e) =>
-                    setPaymentHandles({ ...paymentHandles, venmo: e.target.value })
-                  }
-                  placeholder="@username"
-                />
-
-                <Input
-                  label="PayPal"
-                  id="paypal"
-                  value={paymentHandles.paypal}
-                  onChange={(e) =>
-                    setPaymentHandles({ ...paymentHandles, paypal: e.target.value })
-                  }
-                  placeholder="email@example.com"
-                />
-
-                <Input
-                  label="Cash App"
-                  id="cashapp"
-                  value={paymentHandles.cashapp}
-                  onChange={(e) =>
-                    setPaymentHandles({ ...paymentHandles, cashapp: e.target.value })
-                  }
-                  placeholder="$cashtag"
-                />
-              </div>
-            )}
-          </div>
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            fullWidth
-            loading={isSubmitting}
-            disabled={isSubmitting}
-          >
-            Join
-          </Button>
-        </form>
+        <Suspense fallback={<JoinFormSkeleton />}>
+          <JoinForm />
+        </Suspense>
       </div>
     </div>
   );
