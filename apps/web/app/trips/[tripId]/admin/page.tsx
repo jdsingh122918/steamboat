@@ -1,14 +1,5 @@
 'use client';
 
-/**
- * Admin Dashboard Page
- *
- * Admin-only page for trip management including:
- * - Trip statistics
- * - Deleted items management
- * - Admin role transfer
- */
-
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button, Spinner, Card, CardHeader, CardTitle, CardContent, Select } from '@/components/ui';
@@ -59,6 +50,14 @@ const DELETED_TYPE_FILTER_OPTIONS = [
   { value: 'activity', label: 'Activities' },
 ];
 
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
 export default function AdminPage() {
   const params = useParams();
   const router = useRouter();
@@ -80,7 +79,6 @@ export default function AdminPage() {
   const [selectedNewAdmin, setSelectedNewAdmin] = useState('');
   const [isTransferring, setIsTransferring] = useState(false);
 
-  // Fetch data
   useEffect(() => {
     async function fetchData() {
       try {
@@ -125,18 +123,15 @@ export default function AdminPage() {
     fetchData();
   }, [tripId, router]);
 
-  // Filter deleted items
   const filteredDeletedItems = useMemo(() => {
     if (!deletedTypeFilter) return deletedItems;
     return deletedItems.filter((item) => item.type === deletedTypeFilter);
   }, [deletedItems, deletedTypeFilter]);
 
-  // Get non-admin attendees for transfer selection
   const nonAdminAttendees = useMemo(() => {
     return attendees.filter((a) => a.role !== 'admin');
   }, [attendees]);
 
-  // Handle restore
   const handleRestore = useCallback(
     async (itemId: string) => {
       try {
@@ -160,7 +155,6 @@ export default function AdminPage() {
     [tripId]
   );
 
-  // Handle permanent delete
   const handlePermanentDelete = useCallback(
     async (itemId: string) => {
       try {
@@ -179,7 +173,6 @@ export default function AdminPage() {
     [tripId]
   );
 
-  // Handle admin transfer
   const handleAdminTransfer = useCallback(async () => {
     if (!selectedNewAdmin) return;
 
@@ -202,15 +195,6 @@ export default function AdminPage() {
       setIsTransferring(false);
     }
   }, [tripId, selectedNewAdmin, router]);
-
-  // Format date for display
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
 
   if (loading) {
     return (

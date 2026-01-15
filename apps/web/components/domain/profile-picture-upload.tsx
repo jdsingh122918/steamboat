@@ -1,12 +1,5 @@
 'use client';
 
-/**
- * Profile picture upload component.
- *
- * Wraps Avatar component with upload functionality.
- */
-
-import * as React from 'react';
 import { useRef, useState, useCallback } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 
@@ -31,12 +24,9 @@ export interface ProfilePictureUploadProps {
   allowedTypes?: string[];
 }
 
-const DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const DEFAULT_MAX_SIZE = 5 * 1024 * 1024;
 const DEFAULT_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
-/**
- * Validate file before upload
- */
 function validateFile(
   file: File,
   maxSizeBytes: number,
@@ -60,10 +50,7 @@ function validateFile(
   return { valid: true };
 }
 
-/**
- * Spinner component for loading state
- */
-function Spinner() {
+function Spinner(): React.ReactElement {
   return (
     <svg
       data-testid="upload-spinner"
@@ -91,10 +78,7 @@ function Spinner() {
   );
 }
 
-/**
- * Camera/upload icon
- */
-function CameraIcon() {
+function CameraIcon(): React.ReactElement {
   return (
     <svg
       style={{ width: 20, height: 20 }}
@@ -117,22 +101,6 @@ function CameraIcon() {
   );
 }
 
-/**
- * Profile picture upload component that wraps Avatar with upload functionality.
- *
- * @example
- * <ProfilePictureUpload
- *   name="John Doe"
- *   currentImageUrl="https://example.com/avatar.jpg"
- *   onUpload={async (file) => {
- *     const result = await uploadToCloudinary(file);
- *     return { url: result.url };
- *   }}
- *   onRemove={async () => {
- *     await removeAvatar();
- *   }}
- * />
- */
 export function ProfilePictureUpload({
   currentImageUrl,
   name,
@@ -151,7 +119,6 @@ export function ProfilePictureUpload({
   const [isHovered, setIsHovered] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Compute accept attribute
   const acceptTypes = allowedTypes && allowedTypes.length > 0
     ? allowedTypes.join(',')
     : 'image/*';
@@ -175,7 +142,6 @@ export function ProfilePictureUpload({
 
       setError(null);
 
-      // Validate file
       const validationResult = validateFile(
         file,
         maxSizeBytes,
@@ -184,7 +150,6 @@ export function ProfilePictureUpload({
 
       if (!validationResult.valid) {
         setError(validationResult.error || 'Invalid file');
-        // Reset input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -200,7 +165,6 @@ export function ProfilePictureUpload({
         setError(err instanceof Error ? err.message : 'Upload failed');
       } finally {
         setIsUploading(false);
-        // Reset input so same file can be selected again
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -257,7 +221,6 @@ export function ProfilePictureUpload({
           shape="circle"
         />
 
-        {/* Upload overlay */}
         {(isHovered || isUploading) && !disabled && (
           <div
             data-testid="upload-overlay"
@@ -321,7 +284,6 @@ export function ProfilePictureUpload({
         </button>
       )}
 
-      {/* Error message */}
       {error && (
         <div
           role="alert"

@@ -1,9 +1,3 @@
-/**
- * Trip Stats API routes - /api/trips/[tripId]/stats
- *
- * GET: Get aggregated statistics for a trip
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { requireTripAccess } from '@/lib/auth/guards';
@@ -14,18 +8,12 @@ import { getActivitiesByTrip } from '@/lib/db/operations/activities';
 import { getPollsByTrip } from '@/lib/db/operations/polls';
 import { getPaymentTotals } from '@/lib/db/operations/payments';
 
-/**
- * API response interface
- */
 interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
 }
 
-/**
- * Trip statistics response
- */
 interface TripStatsResponse {
   totalExpenses: number;
   expenseCount: number;
@@ -41,22 +29,11 @@ interface TripStatsResponse {
   settlementStatus: { pending: number; completed: number; total: number };
 }
 
-/**
- * Validate that a string is a valid MongoDB ObjectId
- */
 function isValidObjectId(id: string): boolean {
   return /^[a-fA-F0-9]{24}$/.test(id);
 }
 
-/**
- * Route params type for Next.js 15
- */
 type RouteParams = { params: Promise<{ tripId: string }> };
-
-/**
- * GET /api/trips/[tripId]/stats
- * Get aggregated statistics for a trip
- */
 export async function GET(
   request: NextRequest,
   { params }: RouteParams
@@ -64,7 +41,6 @@ export async function GET(
   try {
     const { tripId } = await params;
 
-    // Validate tripId format
     if (!isValidObjectId(tripId)) {
       return NextResponse.json(
         { success: false, error: 'Invalid tripId format' },
@@ -72,12 +48,10 @@ export async function GET(
       );
     }
 
-    // Require trip access (user must be authenticated and a member)
     await requireTripAccess(tripId);
 
     const tripObjectId = new ObjectId(tripId);
 
-    // Fetch all data in parallel
     const [
       expensesResult,
       expenseBreakdown,
@@ -96,35 +70,29 @@ export async function GET(
       getPaymentTotals(tripObjectId),
     ]);
 
-    // Calculate expense totals
     const totalExpenses = expensesResult.data.reduce(
       (sum, expense) => sum + (expense.amount_cents || 0),
       0
     );
 
-    // Count attendees by status
     const confirmedAttendees = attendees.filter(
       (a) => a.rsvpStatus === 'confirmed'
     ).length;
 
-    // Count activities that have passed (startDate is before now)
     const now = new Date();
     const completedActivities = activities.filter(
       (a) => a.startDate < now
     ).length;
 
-    // Count polls by status
     const openPolls = polls.filter((p) => p.status === 'open').length;
     const closedPolls = polls.filter((p) => p.status === 'closed').length;
 
-    // Format expense breakdown
     const formattedBreakdown = expenseBreakdown.map((item) => ({
       category: item.category,
       total: item.total_cents,
       count: item.count,
     }));
 
-    // Calculate settlement status
     const settlementStatus = {
       pending: paymentTotals.pending_cents,
       completed: paymentTotals.confirmed_cents,
@@ -148,7 +116,6 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: stats }, { status: 200 });
   } catch (error) {
-    // Handle authentication errors
     if (error instanceof Error) {
       if (
         error.message === 'NEXT_REDIRECT' ||

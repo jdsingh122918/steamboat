@@ -1,11 +1,5 @@
 'use client';
 
-/**
- * Location link component.
- *
- * Generates links to maps apps with the provided location.
- */
-
 import * as React from 'react';
 
 export interface LocationLinkProps {
@@ -29,17 +23,11 @@ export interface LocationLinkProps {
   className?: string;
 }
 
-/**
- * Check if the current device is an Apple device
- */
 function isAppleDevice(): boolean {
   if (typeof navigator === 'undefined') return false;
   return /iPhone|iPad|iPod|Mac/i.test(navigator.userAgent);
 }
 
-/**
- * Generate maps URL based on provider and location
- */
 function getMapsUrl(
   location: string,
   coordinates: { lat: number; lng: number } | undefined,
@@ -60,32 +48,11 @@ function getMapsUrl(
     : `https://www.google.com/maps/search/?api=1&query=${encoded}`;
 }
 
-/**
- * Truncate text to a maximum length with ellipsis
- */
 function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';
 }
 
-/**
- * Location link component that opens the location in a maps app.
- *
- * @example
- * <LocationLink
- *   location="1600 Amphitheatre Parkway, Mountain View, CA"
- *   showIcon
- *   provider="auto"
- * />
- *
- * @example
- * // With coordinates for precise location
- * <LocationLink
- *   location="Golden Gate Bridge"
- *   coordinates={{ lat: 37.8199, lng: -122.4783 }}
- *   displayText="View Bridge Location"
- * />
- */
 export function LocationLink({
   location,
   coordinates,

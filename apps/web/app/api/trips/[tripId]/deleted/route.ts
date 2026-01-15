@@ -1,27 +1,15 @@
-/**
- * Deleted Items API routes - /api/trips/[tripId]/deleted
- *
- * GET: List all soft-deleted items for a trip (admin only)
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { requireAdmin } from '@/lib/auth/guards';
 import { getCollection, COLLECTIONS } from '@/lib/db/client';
 import { getAttendeeById } from '@/lib/db/operations/attendees';
 
-/**
- * API response interface
- */
 interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
 }
 
-/**
- * Deleted item structure
- */
 interface DeletedItem {
   id: string;
   type: 'expense' | 'media' | 'activity';
@@ -36,31 +24,18 @@ interface DeletedItem {
   };
 }
 
-/**
- * Validate that a string is a valid MongoDB ObjectId
- */
 function isValidObjectId(id: string): boolean {
   return /^[a-fA-F0-9]{24}$/.test(id);
 }
 
-/**
- * Calculate auto-delete date (30 days from deletion)
- */
 function calculateAutoDeleteDate(deletedAt: Date): Date {
   const autoDelete = new Date(deletedAt);
   autoDelete.setDate(autoDelete.getDate() + 30);
   return autoDelete;
 }
 
-/**
- * Route params type for Next.js 15
- */
 type RouteParams = { params: Promise<{ tripId: string }> };
 
-/**
- * GET /api/trips/[tripId]/deleted
- * List all soft-deleted items for a trip (admin only)
- */
 export async function GET(
   request: NextRequest,
   { params }: RouteParams
@@ -68,7 +43,6 @@ export async function GET(
   try {
     const { tripId } = await params;
 
-    // Validate tripId format
     if (!isValidObjectId(tripId)) {
       return NextResponse.json(
         { success: false, error: 'Invalid tripId format' },
@@ -76,16 +50,13 @@ export async function GET(
       );
     }
 
-    // Require admin access
     await requireAdmin(tripId);
 
     const tripObjectId = new ObjectId(tripId);
 
-    // Get optional type filter
     const url = new URL(request.url);
     const typeFilter = url.searchParams.get('type');
 
-    // Fetch deleted items from all collections
     const [expensesCollection, mediaCollection, activitiesCollection] =
       await Promise.all([
         getCollection(COLLECTIONS.EXPENSES),
@@ -93,13 +64,11 @@ export async function GET(
         getCollection(COLLECTIONS.ACTIVITIES),
       ]);
 
-    // Build query for deleted items
     const deletedQuery = {
       tripId: tripObjectId,
       deletedAt: { $ne: null },
     };
 
-    // Fetch all deleted items in parallel
     const [deletedExpenses, deletedMedia, deletedActivities] = await Promise.all([
       typeFilter && typeFilter !== 'expense'
         ? Promise.resolve([])
@@ -112,7 +81,6 @@ export async function GET(
         : activitiesCollection.find(deletedQuery).toArray(),
     ]);
 
-    // Cache for attendee names
     const attendeeCache = new Map<string, { id: string; name: string }>();
 
     async function getDeletedByInfo(
@@ -136,7 +104,6 @@ export async function GET(
       return info;
     }
 
-    // Transform expenses
     const expenseItems: DeletedItem[] = await Promise.all(
       deletedExpenses.map(async (expense: any) => ({
         id: expense._id.toString(),
@@ -151,7 +118,6 @@ export async function GET(
       }))
     );
 
-    // Transform media
     const mediaItems: DeletedItem[] = await Promise.all(
       deletedMedia.map(async (media: any) => ({
         id: media._id.toString(),
@@ -166,7 +132,6 @@ export async function GET(
       }))
     );
 
-    // Transform activities
     const activityItems: DeletedItem[] = await Promise.all(
       deletedActivities.map(async (activity: any) => ({
         id: activity._id.toString(),
@@ -181,7 +146,6 @@ export async function GET(
       }))
     );
 
-    // Combine and sort by deletedAt (newest first)
     const allItems = [...expenseItems, ...mediaItems, ...activityItems].sort(
       (a, b) =>
         new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime()
@@ -192,7 +156,6 @@ export async function GET(
       { status: 200 }
     );
   } catch (error) {
-    // Handle authentication errors
     if (error instanceof Error) {
       if (
         error.message === 'NEXT_REDIRECT' ||

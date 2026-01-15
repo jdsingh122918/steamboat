@@ -1,12 +1,5 @@
 'use client';
 
-/**
- * Trip banner upload component.
- *
- * Full-width banner with drag-and-drop upload support.
- */
-
-import * as React from 'react';
 import { useRef, useState, useCallback } from 'react';
 
 export interface TripBannerUploadResult {
@@ -33,17 +26,13 @@ export interface TripBannerUploadProps {
   maxSizeBytes?: number;
 }
 
-const DEFAULT_MAX_SIZE = 10 * 1024 * 1024; // 10MB
+const DEFAULT_MAX_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
-/**
- * Validate file before upload
- */
 function validateFile(
   file: File,
   maxSizeBytes: number
 ): { valid: boolean; error?: string } {
-  // Check file type
   if (!file.type.startsWith('image/')) {
     return { valid: false, error: 'Invalid file type. Please select an image.' };
   }
@@ -52,7 +41,6 @@ function validateFile(
     return { valid: false, error: 'Invalid file type. Please select a JPEG, PNG, GIF, or WebP image.' };
   }
 
-  // Check file size
   if (file.size > maxSizeBytes) {
     const maxMB = Math.round(maxSizeBytes / (1024 * 1024));
     return { valid: false, error: `File too large. Maximum size is ${maxMB}MB.` };
@@ -61,9 +49,6 @@ function validateFile(
   return { valid: true };
 }
 
-/**
- * Get CSS aspect ratio from string format
- */
 function getAspectRatioStyle(ratio: '16:9' | '3:1' | '4:3'): string {
   switch (ratio) {
     case '16:9':
@@ -77,10 +62,7 @@ function getAspectRatioStyle(ratio: '16:9' | '3:1' | '4:3'): string {
   }
 }
 
-/**
- * Upload icon
- */
-function UploadIcon() {
+function UploadIcon(): React.ReactElement {
   return (
     <svg
       style={{ width: 48, height: 48 }}
@@ -96,10 +78,7 @@ function UploadIcon() {
   );
 }
 
-/**
- * Spinner component for loading state
- */
-function ProgressIndicator() {
+function ProgressIndicator(): React.ReactElement {
   return (
     <div
       data-testid="upload-progress"
@@ -137,23 +116,6 @@ function ProgressIndicator() {
   );
 }
 
-/**
- * Trip banner upload component with drag-and-drop support.
- *
- * @example
- * <TripBannerUpload
- *   tripId="trip-123"
- *   currentBannerUrl="https://example.com/banner.jpg"
- *   onUpload={async (file) => {
- *     const result = await uploadToCloudinary(file);
- *     return { url: result.url, thumbnailUrl: result.thumbnailUrl };
- *   }}
- *   onRemove={async () => {
- *     await removeBanner(tripId);
- *   }}
- *   canEdit
- * />
- */
 export function TripBannerUpload({
   tripId,
   currentBannerUrl,
@@ -175,7 +137,6 @@ export function TripBannerUpload({
     async (file: File) => {
       setError(null);
 
-      // Validate file
       const validationResult = validateFile(file, maxSizeBytes);
 
       if (!validationResult.valid) {
@@ -204,7 +165,6 @@ export function TripBannerUpload({
 
       await processFile(file);
 
-      // Reset input so same file can be selected again
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -292,7 +252,6 @@ export function TripBannerUpload({
         border: isDragging ? '2px dashed #3b82f6' : '2px dashed transparent',
       }}
     >
-      {/* Banner image or placeholder */}
       {bannerUrl ? (
         <img
           data-testid="banner-image"
@@ -330,7 +289,6 @@ export function TripBannerUpload({
         </div>
       )}
 
-      {/* Upload overlay for existing banner */}
       {bannerUrl && isUploading && (
         <div
           style={{
@@ -347,7 +305,6 @@ export function TripBannerUpload({
         </div>
       )}
 
-      {/* Edit controls */}
       {canEdit && !isUploading && (
         <div
           style={{
@@ -410,7 +367,6 @@ export function TripBannerUpload({
         </div>
       )}
 
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -427,7 +383,6 @@ export function TripBannerUpload({
         disabled={!canEdit || isUploading}
       />
 
-      {/* Error message */}
       {error && (
         <div
           role="alert"

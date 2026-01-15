@@ -1,15 +1,5 @@
 'use client';
 
-/**
- * Trip Recap Page
- *
- * Post-trip summary with:
- * - Trip summary card
- * - Financial summary
- * - Photo highlights
- * - Poll decisions
- */
-
 import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { Spinner, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
@@ -56,9 +46,6 @@ interface Attendee {
   rsvpStatus: 'pending' | 'confirmed' | 'declined';
 }
 
-/**
- * Format date range for display
- */
 function formatDateRange(startDate: string, endDate: string): string {
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -77,9 +64,6 @@ function formatDateRange(startDate: string, endDate: string): string {
   return `${startStr} - ${endStr}`;
 }
 
-/**
- * Get winning option from a poll
- */
 function getWinningOption(poll: Poll): string {
   if (!poll.options || poll.options.length === 0) return 'No votes';
 
@@ -90,9 +74,6 @@ function getWinningOption(poll: Poll): string {
   return winner.text;
 }
 
-/**
- * Get total votes for a poll
- */
 function getTotalVotes(poll: Poll): number {
   if (!poll.options) return 0;
   return poll.options.reduce((sum, option) => sum + option.votes, 0);
@@ -110,7 +91,6 @@ export default function RecapPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch data
   useEffect(() => {
     async function fetchData() {
       try {
@@ -161,7 +141,6 @@ export default function RecapPage() {
     fetchData();
   }, [tripId]);
 
-  // Computed summary stats
   const summary = useMemo(() => {
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount_cents, 0);
     return {
@@ -174,12 +153,10 @@ export default function RecapPage() {
     };
   }, [expenses, attendees, media, polls]);
 
-  // Featured photos (first 12 images)
   const featuredPhotos = useMemo(() => {
     return media.filter((m) => m.type === 'image').slice(0, 12);
   }, [media]);
 
-  // Closed polls with winners
   const closedPolls = useMemo(() => {
     return polls
       .filter((p) => p.status === 'closed')

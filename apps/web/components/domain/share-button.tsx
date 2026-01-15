@@ -1,11 +1,5 @@
 'use client';
 
-/**
- * Share button component.
- *
- * Uses the Web Share API when available, with clipboard fallback.
- */
-
 import * as React from 'react';
 
 export interface ShareContent {
@@ -36,10 +30,7 @@ export interface ShareButtonProps {
   className?: string;
 }
 
-/**
- * Share icon SVG component
- */
-function ShareIcon() {
+function ShareIcon(): React.ReactElement {
   return (
     <svg
       style={{ width: 16, height: 16, flexShrink: 0 }}
@@ -57,26 +48,6 @@ function ShareIcon() {
   );
 }
 
-/**
- * Share button component that uses Web Share API with clipboard fallback.
- *
- * @example
- * <ShareButton
- *   content={{
- *     title: "Check out this trip!",
- *     text: "Join us for an amazing adventure",
- *     url: "https://example.com/trip/123"
- *   }}
- *   onShare={() => console.log("Shared!")}
- * />
- *
- * @example
- * // Icon-only variant
- * <ShareButton
- *   content={{ title: "Trip", url: "https://example.com/trip/123" }}
- *   iconOnly
- * />
- */
 export function ShareButton({
   content,
   buttonText = 'Share',
