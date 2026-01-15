@@ -9,7 +9,7 @@
 
 **Test Results:**
 - Phase 7.1 Payment Flow: 69 tests ⚠️ Components partial, profile page + payment-method-selector missing
-- Phase 7.2 Polls UI: 134 tests ⚠️ Components partial, pages + poll-results-summary missing
+- Phase 7.2 Polls UI: 134 tests ⚠️ Components partial, all pages + poll-results-summary missing
 - Phase 7.3 Content Management: ~105 tests ⚠️ media-edit-modal + expense edit page missing
 - Phase 7.4 Email System: 88 tests ✅ **COMPLETE**
 - Phase 7.5 Export Enhancements: 67 tests ✅ **COMPLETE**
@@ -19,6 +19,7 @@
 
 **Missing Pages/Routes (to be created):**
 - `apps/web/app/trips/[tripId]/profile/page.tsx` (7.1.1)
+- `apps/web/app/trips/[tripId]/polls/page.tsx` (7.2.1)
 - `apps/web/app/trips/[tripId]/polls/new/page.tsx` (7.2.2)
 - `apps/web/app/trips/[tripId]/polls/[pollId]/page.tsx` (7.2.3)
 - `apps/web/app/trips/[tripId]/expenses/[expenseId]/edit/page.tsx` (7.3.3)
@@ -426,24 +427,24 @@ describe('PaymentStatusActions', () => {
 **Tests:** 134 tests passing
 **Dependencies:** Existing polls API (`/api/trips/[tripId]/polls`)
 
-### 7.2.1 Polls Page ✅
+### 7.2.1 Polls Page ❌
 
 **Description:** Main polls page listing all polls with filtering by status.
 
-**Files Created:**
+**Files Not Yet Created:**
 ```
 apps/web/app/trips/[tripId]/polls/page.tsx
 apps/web/app/trips/[tripId]/polls/__tests__/page.test.tsx
 ```
 
 **Tasks:**
-- [x] Write polls page tests
-- [x] Implement polls page with list of PollCards
-- [x] Add filter tabs for Open/Closed polls
-- [x] Add "Create Poll" button (admin only)
-- [x] Integrate with GET `/api/trips/[tripId]/polls`
-- [x] Add Pusher subscriptions for poll updates
-- [x] Verify: Polls display correctly with real-time updates
+- [ ] Write polls page tests
+- [ ] Implement polls page with list of PollCards
+- [ ] Add filter tabs for Open/Closed polls
+- [ ] Add "Create Poll" button (admin only)
+- [ ] Integrate with GET `/api/trips/[tripId]/polls`
+- [ ] Add Pusher subscriptions for poll updates
+- [ ] Verify: Polls display correctly with real-time updates
 
 **Test Cases:**
 ```typescript
