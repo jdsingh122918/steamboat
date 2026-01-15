@@ -10,6 +10,7 @@ import {
   getPaymentMethodDisplayName,
   type PaymentLinkResult,
 } from '@/lib/utils/payment-links';
+import { formatCurrency } from '@/lib/utils/format';
 
 interface Settlement {
   amount_cents: number;
@@ -35,13 +36,6 @@ interface SettleUpModalProps {
 }
 
 type Step = 'select-method' | 'confirm';
-
-const formatCurrency = (cents: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(cents / 100);
-};
 
 const PAYMENT_METHODS: { key: PaymentMethod; label: string; requiresHandle: boolean }[] = [
   { key: 'venmo', label: 'Venmo', requiresHandle: true },
@@ -202,7 +196,7 @@ export function SettleUpModal({
         <div className="settle-up-modal-body">
           <div className="settle-up-modal-amount">
             <span className="amount-label">Amount to pay</span>
-            <span className="amount-value">{formatCurrency(settlement.amount_cents)}</span>
+            <span className="amount-value">{formatCurrency(settlement.amount_cents, { isCents: true })}</span>
           </div>
 
           <div className="settle-up-modal-parties">
@@ -291,7 +285,7 @@ export function SettleUpModal({
                       onChange={(e) => setConfirmed(e.target.checked)}
                       className="confirm-checkbox"
                     />
-                    <span>I confirm I have paid {formatCurrency(settlement.amount_cents)} in {selectedMethod}</span>
+                    <span>I confirm I have paid {formatCurrency(settlement.amount_cents, { isCents: true })} in {selectedMethod}</span>
                   </label>
                   <button
                     type="button"

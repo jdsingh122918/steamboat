@@ -17,19 +17,13 @@ import { getAttendeeById, getAttendeesByTrip } from '@/lib/db/operations/attende
 import { PaymentMethods, PaymentStatuses, type Payment, type Attendee } from '@/lib/db/models';
 import { triggerTripEvent } from '@/lib/pusher-server';
 import { PusherEventType } from '@/lib/pusher';
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
-/**
- * Validate ObjectId format.
- */
-function isValidObjectId(id: string): boolean {
-  return /^[a-fA-F0-9]{24}$/.test(id);
-}
+import {
+  type ApiResponse,
+  isValidObjectId,
+  errorResponse,
+  successResponse,
+  handleApiError,
+} from '@/lib/api';
 
 /**
  * Serialize a payment for JSON response with participant names.
@@ -68,10 +62,7 @@ export async function GET(
 
     // Validate tripId format
     if (!isValidObjectId(tripId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid tripId format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid tripId format', 400);
     }
 
     // Check trip access
@@ -85,29 +76,20 @@ export async function GET(
 
     // Validate status if provided
     if (status && !PaymentStatuses.includes(status as any)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Invalid status. Must be one of: ${PaymentStatuses.join(', ')}`,
-        },
-        { status: 400 }
+      return errorResponse(
+        `Invalid status. Must be one of: ${PaymentStatuses.join(', ')}`,
+        400
       );
     }
 
     // Validate fromId if provided
     if (fromId && !isValidObjectId(fromId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid fromId format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid fromId format', 400);
     }
 
     // Validate toId if provided
     if (toId && !isValidObjectId(toId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid toId format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid toId format', 400);
     }
 
     // Build filter
@@ -149,32 +131,9 @@ export async function GET(
       serializePayment(p, attendeeMap)
     );
 
-    return NextResponse.json({
-      success: true,
-      data: serializedPayments,
-    });
+    return successResponse(serializedPayments);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-
-    if (message.includes('Forbidden')) {
-      return NextResponse.json(
-        { success: false, error: message },
-        { status: 403 }
-      );
-    }
-
-    if (message.includes('NEXT_REDIRECT') || message.includes('Unauthorized')) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    console.error('GET /api/trips/[tripId]/payments error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'GET /api/trips/[tripId]/payments');
   }
 }
 
@@ -193,10 +152,7 @@ export async function POST(
 
     // Validate tripId format
     if (!isValidObjectId(tripId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid tripId format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid tripId format', 400);
     }
 
     // Check trip access
@@ -208,86 +164,53 @@ export async function POST(
 
     // Validate required fields
     if (!fromId || !toId || amount_cents === undefined) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Missing required fields: fromId, toId, amount_cents',
-        },
-        { status: 400 }
-      );
+      return errorResponse('Missing required fields: fromId, toId, amount_cents', 400);
     }
 
     // Validate fromId format
     if (!isValidObjectId(fromId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid fromId format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid fromId format', 400);
     }
 
     // Validate toId format
     if (!isValidObjectId(toId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid toId format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid toId format', 400);
     }
 
     // Validate amount
     if (typeof amount_cents !== 'number' || amount_cents <= 0) {
-      return NextResponse.json(
-        { success: false, error: 'amount_cents must be a positive number' },
-        { status: 400 }
-      );
+      return errorResponse('amount_cents must be a positive number', 400);
     }
 
     // Validate method
     if (!PaymentMethods.includes(method)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Invalid method. Must be one of: ${PaymentMethods.join(', ')}`,
-        },
-        { status: 400 }
+      return errorResponse(
+        `Invalid method. Must be one of: ${PaymentMethods.join(', ')}`,
+        400
       );
     }
 
     // Validate fromId and toId are different
     if (fromId === toId) {
-      return NextResponse.json(
-        { success: false, error: 'Sender and receiver cannot be the same' },
-        { status: 400 }
-      );
+      return errorResponse('Sender and receiver cannot be the same', 400);
     }
 
     // Verify sender exists and belongs to this trip
     const sender = await getAttendeeById(new ObjectId(fromId));
     if (!sender) {
-      return NextResponse.json(
-        { success: false, error: 'Sender not found' },
-        { status: 404 }
-      );
+      return errorResponse('Sender not found', 404);
     }
     if (sender.tripId.toString() !== tripId) {
-      return NextResponse.json(
-        { success: false, error: 'Sender not found in this trip' },
-        { status: 404 }
-      );
+      return errorResponse('Sender not found in this trip', 404);
     }
 
     // Verify receiver exists and belongs to this trip
     const receiver = await getAttendeeById(new ObjectId(toId));
     if (!receiver) {
-      return NextResponse.json(
-        { success: false, error: 'Receiver not found' },
-        { status: 404 }
-      );
+      return errorResponse('Receiver not found', 404);
     }
     if (receiver.tripId.toString() !== tripId) {
-      return NextResponse.json(
-        { success: false, error: 'Receiver not found in this trip' },
-        { status: 404 }
-      );
+      return errorResponse('Receiver not found in this trip', 404);
     }
 
     // Create the payment
@@ -314,31 +237,8 @@ export async function POST(
       payment: serializedPayment,
     });
 
-    return NextResponse.json(
-      { success: true, data: serializedPayment },
-      { status: 201 }
-    );
+    return successResponse(serializedPayment, 201);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-
-    if (message.includes('Forbidden')) {
-      return NextResponse.json(
-        { success: false, error: message },
-        { status: 403 }
-      );
-    }
-
-    if (message.includes('NEXT_REDIRECT') || message.includes('Unauthorized')) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    console.error('POST /api/trips/[tripId]/payments error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'POST /api/trips/[tripId]/payments');
   }
 }

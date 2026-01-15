@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/navigation';
 import { DisputeForm, DisputeCard } from '@/components/domain';
 import type { DisputeData } from '@/components/domain/dispute-form';
 import type { Dispute } from '@/components/domain/dispute-card';
+import { formatCurrency, formatDate } from '@/lib/utils/format';
 
 interface Participant {
   attendeeId: string;
@@ -143,18 +144,6 @@ export default function ExpenseDetailPage() {
     fetchExpenseData();
   }, [fetchExpenseData]);
 
-  const formatCurrency = (cents: number): string => {
-    return `$${(cents / 100).toFixed(2)}`;
-  };
-
-  const formatDate = (dateStr: string): string => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   const isAdmin = currentUser?.role === 'organizer';
   const isParticipant = expense?.participants.some(
     (p) => p.attendeeId === currentUser?.id && p.optedIn
@@ -259,7 +248,7 @@ export default function ExpenseDetailPage() {
     <div className="expense-detail-page" data-testid="expense-detail-page">
       <PageHeader
         title={expense.description}
-        subtitle={formatCurrency(expense.amount_cents)}
+        subtitle={formatCurrency(expense.amount_cents, { isCents: true })}
         showBack
         onBack={() => router.push(`/trips/${tripId}/finances`)}
         actions={
@@ -287,7 +276,7 @@ export default function ExpenseDetailPage() {
               <div className="expense-detail-item">
                 <span className="expense-detail-label">Amount</span>
                 <span className="expense-detail-value" data-testid="expense-amount">
-                  {formatCurrency(expense.amount_cents)}
+                  {formatCurrency(expense.amount_cents, { isCents: true })}
                 </span>
               </div>
 
@@ -361,10 +350,11 @@ export default function ExpenseDetailPage() {
                     <span className="participant-name">{participant.attendeeName}</span>
                     <span className="participant-share">
                       {participant.share_cents
-                        ? formatCurrency(participant.share_cents)
+                        ? formatCurrency(participant.share_cents, { isCents: true })
                         : formatCurrency(
                             expense.amount_cents /
-                              expense.participants.filter((p) => p.optedIn).length
+                              expense.participants.filter((p) => p.optedIn).length,
+                            { isCents: true }
                           )}
                     </span>
                   </div>

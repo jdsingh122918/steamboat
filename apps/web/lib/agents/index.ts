@@ -66,6 +66,12 @@ export {
   resetGlobalCostTracker,
 } from './cost-tracker';
 
+// Base Agent
+export { BaseAgent, type ExecuteOptions, type ExecuteResult } from './base-agent';
+
+// Utilities
+export { parseJsonResponse } from './parse-json-response';
+
 // Agents
 export {
   ReceiptProcessor,

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { formatCurrency, formatDate } from '@/lib/utils/format';
 
 type ItemType = 'expense' | 'media' | 'activity';
 
@@ -49,18 +50,6 @@ export function DeletedItemCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const formatDate = (date: Date): string => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const formatCurrency = (cents: number): string => {
-    return `$${(cents / 100).toFixed(2)}`;
-  };
 
   const getDaysRemaining = (): number | null => {
     if (!autoDeleteDays) return null;
@@ -144,7 +133,7 @@ export function DeletedItemCard({
 
           {item.type === 'expense' && item.metadata?.amount_cents && (
             <span className="item-amount">
-              {formatCurrency(item.metadata.amount_cents)}
+              {formatCurrency(item.metadata.amount_cents, { isCents: true })}
             </span>
           )}
         </div>

@@ -66,62 +66,33 @@ export function useTripRealtime(
 
   // Create stable wrapper handlers that call the current handlers from ref
   const createStableHandlers = useCallback((): TripEventHandlers => {
-    const wrap =
-      <T extends unknown>(handler: ((data: T) => void) | undefined) =>
-      (data: T) => {
-        handler?.(data);
-      };
+    const handlerKeys: (keyof TripEventHandlers)[] = [
+      'onExpenseCreated',
+      'onExpenseUpdated',
+      'onExpenseDeleted',
+      'onActivityCreated',
+      'onActivityUpdated',
+      'onActivityDeleted',
+      'onRsvpUpdated',
+      'onPaymentReceived',
+      'onSettlementUpdated',
+      'onMediaUploaded',
+      'onMediaDeleted',
+      'onAttendeeJoined',
+      'onAttendeeLeft',
+      'onPollCreated',
+      'onPollVoted',
+      'onPollClosed',
+    ];
 
-    return {
-      onExpenseCreated: handlersRef.current.onExpenseCreated
-        ? wrap(handlersRef.current.onExpenseCreated)
-        : undefined,
-      onExpenseUpdated: handlersRef.current.onExpenseUpdated
-        ? wrap(handlersRef.current.onExpenseUpdated)
-        : undefined,
-      onExpenseDeleted: handlersRef.current.onExpenseDeleted
-        ? wrap(handlersRef.current.onExpenseDeleted)
-        : undefined,
-      onActivityCreated: handlersRef.current.onActivityCreated
-        ? wrap(handlersRef.current.onActivityCreated)
-        : undefined,
-      onActivityUpdated: handlersRef.current.onActivityUpdated
-        ? wrap(handlersRef.current.onActivityUpdated)
-        : undefined,
-      onActivityDeleted: handlersRef.current.onActivityDeleted
-        ? wrap(handlersRef.current.onActivityDeleted)
-        : undefined,
-      onRsvpUpdated: handlersRef.current.onRsvpUpdated
-        ? wrap(handlersRef.current.onRsvpUpdated)
-        : undefined,
-      onPaymentReceived: handlersRef.current.onPaymentReceived
-        ? wrap(handlersRef.current.onPaymentReceived)
-        : undefined,
-      onSettlementUpdated: handlersRef.current.onSettlementUpdated
-        ? wrap(handlersRef.current.onSettlementUpdated)
-        : undefined,
-      onMediaUploaded: handlersRef.current.onMediaUploaded
-        ? wrap(handlersRef.current.onMediaUploaded)
-        : undefined,
-      onMediaDeleted: handlersRef.current.onMediaDeleted
-        ? wrap(handlersRef.current.onMediaDeleted)
-        : undefined,
-      onAttendeeJoined: handlersRef.current.onAttendeeJoined
-        ? wrap(handlersRef.current.onAttendeeJoined)
-        : undefined,
-      onAttendeeLeft: handlersRef.current.onAttendeeLeft
-        ? wrap(handlersRef.current.onAttendeeLeft)
-        : undefined,
-      onPollCreated: handlersRef.current.onPollCreated
-        ? wrap(handlersRef.current.onPollCreated)
-        : undefined,
-      onPollVoted: handlersRef.current.onPollVoted
-        ? wrap(handlersRef.current.onPollVoted)
-        : undefined,
-      onPollClosed: handlersRef.current.onPollClosed
-        ? wrap(handlersRef.current.onPollClosed)
-        : undefined,
-    };
+    return Object.fromEntries(
+      handlerKeys.map((key) => [
+        key,
+        handlersRef.current[key]
+          ? (data: unknown) => handlersRef.current[key]?.(data)
+          : undefined,
+      ])
+    ) as TripEventHandlers;
   }, []);
 
   // Subscribe to trip channel

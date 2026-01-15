@@ -14,24 +14,13 @@ import {
   getAttendeeByEmail,
 } from '@/lib/db/operations/attendees';
 import { CreateAttendeeSchema } from '@/lib/db/models';
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
-/**
- * Validate ObjectId format.
- */
-function isValidObjectId(id: string): boolean {
-  try {
-    new ObjectId(id);
-    return ObjectId.isValid(id) && new ObjectId(id).toString() === id;
-  } catch {
-    return false;
-  }
-}
+import {
+  type ApiResponse,
+  isValidObjectId,
+  errorResponse,
+  successResponse,
+  handleApiError,
+} from '@/lib/api';
 
 /**
  * GET /api/trips/[tripId]/attendees
@@ -47,10 +36,7 @@ export async function GET(
 
     // Validate tripId format
     if (!isValidObjectId(tripId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid tripId format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid tripId format', 400);
     }
 
     // Check trip access
@@ -59,33 +45,9 @@ export async function GET(
     // Get all attendees for the trip
     const attendees = await getAttendeesByTrip(new ObjectId(tripId));
 
-    return NextResponse.json({
-      success: true,
-      data: attendees,
-    });
+    return successResponse(attendees);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-
-    if (message.includes('Forbidden')) {
-      return NextResponse.json(
-        { success: false, error: message },
-        { status: 403 }
-      );
-    }
-
-    // Handle redirect errors from requireAuth
-    if (message.includes('NEXT_REDIRECT') || message.includes('Unauthorized')) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    console.error('GET /api/trips/[tripId]/attendees error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'GET /api/trips/[tripId]/attendees');
   }
 }
 
@@ -103,10 +65,7 @@ export async function POST(
 
     // Validate tripId format
     if (!isValidObjectId(tripId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid tripId format' },
-        { status: 400 }
-      );
+      return errorResponse('Invalid tripId format', 400);
     }
 
     // Check admin access
@@ -121,12 +80,9 @@ export async function POST(
 
     const parseResult = CreateAttendeeSchema.safeParse(attendeeData);
     if (!parseResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Invalid request body: ${parseResult.error.errors.map((e) => e.message).join(', ')}`,
-        },
-        { status: 400 }
+      return errorResponse(
+        `Invalid request body: ${parseResult.error.errors.map((e) => e.message).join(', ')}`,
+        400
       );
     }
 
@@ -136,41 +92,17 @@ export async function POST(
       parseResult.data.email
     );
     if (existingAttendee) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'An attendee with this email already exists in this trip',
-        },
-        { status: 409 }
+      return errorResponse(
+        'An attendee with this email already exists in this trip',
+        409
       );
     }
 
     // Create the attendee
     const attendee = await createAttendee(parseResult.data);
 
-    return NextResponse.json({ success: true, data: attendee }, { status: 201 });
+    return successResponse(attendee, 201);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-
-    if (message.includes('Forbidden')) {
-      return NextResponse.json(
-        { success: false, error: message },
-        { status: 403 }
-      );
-    }
-
-    // Handle redirect errors from requireAuth
-    if (message.includes('NEXT_REDIRECT') || message.includes('Unauthorized')) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    console.error('POST /api/trips/[tripId]/attendees error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'POST /api/trips/[tripId]/attendees');
   }
 }

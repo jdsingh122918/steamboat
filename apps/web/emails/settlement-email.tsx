@@ -12,6 +12,7 @@ import {
 } from '@react-email/components';
 import * as React from 'react';
 import { BaseLayout } from './base-layout';
+import { formatCurrency, formatDate } from '@/lib/utils/format';
 
 /**
  * Props for the SettlementEmail component.
@@ -40,25 +41,10 @@ export interface SettlementEmailProps {
 }
 
 /**
- * Format currency amount.
+ * Format date for email display (includes weekday).
  */
-function formatCurrency(amount: number, currency: string = 'USD'): string {
-  const symbols: Record<string, string> = {
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-    CAD: 'CA$',
-    AUD: 'A$',
-  };
-  const symbol = symbols[currency] || currency + ' ';
-  return `${symbol}${amount.toFixed(2)}`;
-}
-
-/**
- * Format date for display.
- */
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-US', {
+function formatEmailDate(date: Date): string {
+  return formatDate(date, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -180,8 +166,8 @@ export function SettlementEmail({
   type = 'received',
   note,
 }: SettlementEmailProps) {
-  const formattedAmount = formatCurrency(amount, currency);
-  const formattedDate = formatDate(settledAt);
+  const formattedAmount = formatCurrency(amount, { currency });
+  const formattedDate = formatEmailDate(settledAt);
 
   const isReceived = type === 'received';
   const headerText = isReceived

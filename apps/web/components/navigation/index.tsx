@@ -3,6 +3,7 @@
 import React, { forwardRef, ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { getInitials } from '@/lib/utils/format';
 
 // ============================================
 // Navigation Item Types
@@ -125,15 +126,6 @@ const DesktopSidebar = forwardRef<HTMLElement, DesktopSidebarProps>(
       { label: 'Attendees', href: `/trips/${tripId}/attendees`, icon: <AttendeesIcon /> },
       { label: 'Settings', href: `/trips/${tripId}/settings`, icon: <SettingsIcon /> },
     ];
-
-    const getInitials = (name: string) => {
-      return name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
-    };
 
     return (
       <nav

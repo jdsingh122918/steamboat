@@ -5,20 +5,17 @@
  * Uses Claude's vision capabilities to analyze receipts.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import {
   AgentRole,
-  AgentStatus,
   AgentRoleType,
-  AgentStatusType,
   AgentResult,
   ExtractedExpenseData,
   createSuccessResult,
   createErrorResult,
 } from './types';
-import { getAgentConfig, AgentModel } from './config';
-import { getSystemPrompt } from './prompts';
-import { getGlobalCostTracker } from './cost-tracker';
+import { AgentModel } from './config';
+import { BaseAgent } from './base-agent';
+import { parseJsonResponse } from './parse-json-response';
 
 export interface ProcessReceiptInput {
   imageUrl: string;
@@ -37,27 +34,7 @@ export interface ValidationResult {
  * Parse the AI response to extract expense data
  */
 export function parseReceiptResponse(response: string): ExtractedExpenseData | null {
-  try {
-    // Try to parse directly
-    const trimmed = response.trim();
-
-    // Check for JSON in markdown code block
-    const codeBlockMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (codeBlockMatch) {
-      return JSON.parse(codeBlockMatch[1].trim());
-    }
-
-    // Try to find JSON object in the response
-    const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-
-    // Try direct parse
-    return JSON.parse(trimmed);
-  } catch {
-    return null;
-  }
+  return parseJsonResponse<ExtractedExpenseData>(response);
 }
 
 /**
@@ -111,112 +88,74 @@ export function validateExtractedData(data: ExtractedExpenseData): ValidationRes
 /**
  * Receipt Processor Agent class
  */
-export class ReceiptProcessor {
-  private client: Anthropic;
-  private status: AgentStatusType = AgentStatus.IDLE;
-  private role: AgentRoleType = AgentRole.RECEIPT_PROCESSOR;
-
-  constructor() {
-    const config = getAgentConfig();
-    this.client = new Anthropic({
-      apiKey: config.apiKey,
-    });
-  }
+export class ReceiptProcessor extends BaseAgent<ProcessReceiptInput, ExtractedExpenseData> {
+  protected readonly role: AgentRoleType = AgentRole.RECEIPT_PROCESSOR;
 
   /**
-   * Get current agent status
+   * Process a receipt image and extract expense data
    */
-  getStatus(): AgentStatusType {
-    return this.status;
-  }
-
-  /**
-   * Get agent role
-   */
-  getRole(): AgentRoleType {
-    return this.role;
+  async process(input: ProcessReceiptInput): Promise<AgentResult<ExtractedExpenseData>> {
+    return this.processReceipt(input);
   }
 
   /**
    * Process a receipt image and extract expense data
    */
-  async processReceipt(
-    input: ProcessReceiptInput
-  ): Promise<AgentResult<ExtractedExpenseData>> {
-    this.status = AgentStatus.PROCESSING;
+  async processReceipt(input: ProcessReceiptInput): Promise<AgentResult<ExtractedExpenseData>> {
+    this.setProcessing();
 
-    try {
-      const systemPrompt = getSystemPrompt(this.role);
-
-      const response = await this.client.messages.create({
-        model: AgentModel.SONNET,
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image',
-                source: {
-                  type: 'url',
-                  url: input.imageUrl,
-                },
+    const result = await this.executeWithTracking({
+      model: AgentModel.SONNET,
+      maxTokens: 1024,
+      tripId: input.tripId,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'url',
+                url: input.imageUrl,
               },
-              {
-                type: 'text',
-                text: `Please analyze this receipt image and extract the expense data. ${
-                  input.tripName ? `This is for the trip: ${input.tripName}.` : ''
-                } Return the data as JSON with the following fields: vendor, date (YYYY-MM-DD), amount (number), currency, category (lodging/transport/dining/activities/drinks/other), items (array of {name, quantity, price} if visible), description (optional), and confidence (0-1).`,
-              },
-            ],
-          },
-        ],
-      });
+            },
+            {
+              type: 'text',
+              text: `Please analyze this receipt image and extract the expense data. ${
+                input.tripName ? `This is for the trip: ${input.tripName}.` : ''
+              } Return the data as JSON with the following fields: vendor, date (YYYY-MM-DD), amount (number), currency, category (lodging/transport/dining/activities/drinks/other), items (array of {name, quantity, price} if visible), description (optional), and confidence (0-1).`,
+            },
+          ],
+        },
+      ],
+    });
 
-      // Track usage
-      const costTracker = getGlobalCostTracker();
-      costTracker.recordUsage({
-        model: AgentModel.SONNET,
-        role: this.role,
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
-        tripId: input.tripId,
-      });
-
-      // Extract text from response
-      const textContent = response.content.find((c) => c.type === 'text');
-      if (!textContent || textContent.type !== 'text') {
-        this.status = AgentStatus.ERROR;
-        return createErrorResult('No text content in response');
-      }
-
-      // Parse the JSON response
-      const extractedData = parseReceiptResponse(textContent.text);
-      if (!extractedData) {
-        this.status = AgentStatus.ERROR;
-        return createErrorResult('Failed to parse response as JSON');
-      }
-
-      // Validate extracted data
-      const validation = validateExtractedData(extractedData);
-      if (!validation.isValid) {
-        this.status = AgentStatus.ERROR;
-        return createErrorResult(
-          `Invalid data: missing or invalid fields: ${validation.errors.join(', ')}`
-        );
-      }
-
-      this.status = AgentStatus.COMPLETED;
-      return createSuccessResult(extractedData, {
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
-        warnings: validation.warnings,
-      });
-    } catch (error) {
-      this.status = AgentStatus.ERROR;
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      return createErrorResult(message);
+    if (!result.success) {
+      this.setError();
+      return createErrorResult(result.error);
     }
+
+    // Parse the JSON response
+    const extractedData = parseReceiptResponse(result.data.text);
+    if (!extractedData) {
+      this.setError();
+      return createErrorResult('Failed to parse response as JSON');
+    }
+
+    // Validate extracted data
+    const validation = validateExtractedData(extractedData);
+    if (!validation.isValid) {
+      this.setError();
+      return createErrorResult(
+        `Invalid data: missing or invalid fields: ${validation.errors.join(', ')}`
+      );
+    }
+
+    this.setCompleted();
+    return createSuccessResult(extractedData, {
+      inputTokens: result.data.inputTokens,
+      outputTokens: result.data.outputTokens,
+      warnings: validation.warnings,
+    });
   }
 }

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button, Spinner, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import { PageHeader } from '@/components/navigation';
 import { ActivityCard } from '@/components/domain';
+import { formatDate } from '@/lib/utils/format';
 
 interface Activity {
   id: string;
@@ -38,10 +39,9 @@ const formatTime = (time: string): string => {
   return `${hour12}:${minutes} ${ampm}`;
 };
 
-// Format date for display
+// Format date for display (uses formatDate with custom options for headers)
 const formatDateHeader = (dateStr: string): string => {
-  const date = new Date(dateStr + 'T12:00:00');
-  return date.toLocaleDateString('en-US', {
+  return formatDate(dateStr, {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
