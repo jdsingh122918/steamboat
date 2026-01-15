@@ -696,7 +696,7 @@ apps/web/components/domain/__tests__/dispute-card.test.tsx
 
 **Description:** Set up Resend client and base email utilities.
 
-**Files to Create:**
+**Files Created:**
 ```
 apps/web/lib/email/index.ts
 apps/web/lib/email/client.ts
@@ -717,7 +717,7 @@ apps/web/emails/__tests__/base-layout.test.tsx
 
 **Description:** Email template for trip invitations.
 
-**Files to Create:**
+**Files Created:**
 ```
 apps/web/emails/invite-email.tsx
 apps/web/emails/__tests__/invite-email.test.tsx
@@ -737,7 +737,7 @@ apps/web/app/api/email/send-invite/__tests__/route.test.ts
 
 **Description:** Email reminders for outstanding payments.
 
-**Files to Create:**
+**Files Created:**
 ```
 apps/web/emails/payment-reminder-email.tsx
 apps/web/emails/__tests__/payment-reminder-email.test.tsx
@@ -757,7 +757,7 @@ apps/web/app/api/email/payment-reminder/__tests__/route.test.ts
 
 **Description:** Email notifications when settlements are confirmed.
 
-**Files to Create:**
+**Files Created:**
 ```
 apps/web/emails/settlement-email.tsx
 apps/web/emails/__tests__/settlement-email.test.tsx
@@ -785,7 +785,7 @@ apps/web/app/api/email/settlement-notification/__tests__/route.test.ts
 
 **Description:** Generate PDF expense reports using @react-pdf/renderer.
 
-**Files to Create:**
+**Files Created:**
 ```
 apps/web/lib/pdf/expense-report.tsx
 apps/web/lib/pdf/__tests__/expense-report.test.tsx
@@ -806,7 +806,7 @@ apps/web/components/domain/__tests__/export-pdf-button.test.tsx
 
 **Description:** Download multiple photos as a ZIP file.
 
-**Files to Create:**
+**Files Created:**
 ```
 apps/web/lib/download/bulk-download.ts
 apps/web/lib/download/__tests__/bulk-download.test.ts
@@ -826,7 +826,7 @@ apps/web/components/domain/__tests__/bulk-download-button.test.tsx
 
 **Description:** Download single photos from gallery.
 
-**Files to Create:**
+**Files Created:**
 ```
 apps/web/components/domain/photo-download-button.tsx
 apps/web/components/domain/__tests__/photo-download-button.test.tsx
