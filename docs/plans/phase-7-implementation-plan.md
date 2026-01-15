@@ -18,14 +18,15 @@
 - **Total Tests: 2068 tests passing** (as of 2026-01-15)
 
 **Missing Pages/Routes (to be created):**
-- `apps/web/app/trips/[tripId]/profile/page.tsx`
-- `apps/web/app/trips/[tripId]/polls/new/page.tsx`
-- `apps/web/app/trips/[tripId]/polls/[pollId]/page.tsx`
-- `apps/web/app/trips/[tripId]/admin/page.tsx`
-- `apps/web/app/trips/[tripId]/recap/page.tsx`
-- `apps/web/app/trips/[tripId]/admin/deleted/page.tsx`
-- `apps/web/app/api/trips/[tripId]/admin/transfer/route.ts`
-- `apps/web/app/api/profile/avatar/route.ts`
+- `apps/web/app/trips/[tripId]/profile/page.tsx` (7.1.1)
+- `apps/web/app/trips/[tripId]/polls/new/page.tsx` (7.2.2)
+- `apps/web/app/trips/[tripId]/polls/[pollId]/page.tsx` (7.2.3)
+- `apps/web/app/trips/[tripId]/expenses/[expenseId]/edit/page.tsx` (7.3.3)
+- `apps/web/app/trips/[tripId]/admin/page.tsx` (7.6.1)
+- `apps/web/app/trips/[tripId]/recap/page.tsx` (7.6.2)
+- `apps/web/app/trips/[tripId]/admin/deleted/page.tsx` (7.6.3)
+- `apps/web/app/api/trips/[tripId]/admin/transfer/route.ts` (7.6.4)
+- `apps/web/app/api/profile/avatar/route.ts` (7.7.1)
 
 **Missing Components (to be created):**
 - `apps/web/components/domain/payment-method-selector.tsx` (7.1.2)
@@ -685,7 +686,7 @@ apps/web/components/domain/__tests__/gallery-filters.test.tsx
 - [x] Integrate with gallery page
 - [x] Verify: Photos filter correctly
 
-### 7.3.3 Expense Editing Form ✅
+### 7.3.3 Expense Editing Form ⚠️
 
 **Description:** Allow users to edit their own expenses (not settled/disputed).
 
@@ -693,6 +694,10 @@ apps/web/components/domain/__tests__/gallery-filters.test.tsx
 ```
 apps/web/components/domain/expense-edit-form.tsx
 apps/web/components/domain/__tests__/expense-edit-form.test.tsx
+```
+
+**Files Not Yet Created:**
+```
 apps/web/app/trips/[tripId]/expenses/[expenseId]/edit/page.tsx
 apps/web/app/trips/[tripId]/expenses/[expenseId]/edit/__tests__/page.test.tsx
 ```
@@ -701,12 +706,12 @@ apps/web/app/trips/[tripId]/expenses/[expenseId]/edit/__tests__/page.test.tsx
 - [x] Write ExpenseEditForm component tests
 - [x] Implement ExpenseEditForm with all expense fields
 - [x] Add split type editing (equal, custom, percentage)
-- [x] Write expense edit page tests
-- [x] Implement expense edit page
+- [ ] Write expense edit page tests
+- [ ] Implement expense edit page
 - [x] Validate user is expense creator
 - [x] Prevent editing settled/disputed expenses
 - [x] Integrate with PUT `/api/trips/[tripId]/expenses/[expenseId]`
-- [x] Verify: Expense updates correctly
+- [ ] Verify: Expense updates correctly
 
 ### 7.3.4 Expense Dispute Filing UI ✅
 
