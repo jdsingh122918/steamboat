@@ -8,9 +8,9 @@
 **Status:** `[~]` **PARTIALLY COMPLETE** (Components done, some pages missing)
 
 **Test Results:**
-- Phase 7.1 Payment Flow: 69 tests ✅ Components complete, profile page missing
-- Phase 7.2 Polls UI: 134 tests ✅ Components complete, some pages missing
-- Phase 7.3 Content Management: ~105 tests ✅ **COMPLETE**
+- Phase 7.1 Payment Flow: 69 tests ⚠️ Components partial, profile page + payment-method-selector missing
+- Phase 7.2 Polls UI: 134 tests ⚠️ Components complete, some pages missing
+- Phase 7.3 Content Management: ~105 tests ⚠️ media-edit-modal missing
 - Phase 7.4 Email System: 88 tests ✅ **COMPLETE**
 - Phase 7.5 Export Enhancements: 67 tests ✅ **COMPLETE**
 - Phase 7.6 Admin Features: 60 tests ⚠️ Components complete, pages missing
@@ -27,13 +27,16 @@
 - `apps/web/app/api/trips/[tripId]/admin/transfer/route.ts`
 - `apps/web/app/api/profile/avatar/route.ts`
 
-**Missing Phase 7.7 Components (to be created):**
-- `apps/web/components/domain/profile-picture-upload.tsx`
-- `apps/web/components/domain/trip-banner-upload.tsx`
-- `apps/web/components/domain/share-button.tsx`
-- `apps/web/components/domain/location-link.tsx`
-- `apps/web/lib/sharing/deep-links.ts`
-- `apps/web/lib/maps/google-maps-link.ts`
+**Missing Components (to be created):**
+- `apps/web/components/domain/payment-method-selector.tsx` (7.1.2)
+- `apps/web/components/domain/media-edit-modal.tsx` (7.3.1)
+- `apps/web/components/domain/poll-results-summary.tsx` (7.2.4)
+- `apps/web/components/domain/profile-picture-upload.tsx` (7.7.1)
+- `apps/web/components/domain/trip-banner-upload.tsx` (7.7.2)
+- `apps/web/components/domain/share-button.tsx` (7.7.3)
+- `apps/web/components/domain/location-link.tsx` (7.7.4)
+- `apps/web/lib/sharing/deep-links.ts` (7.7.3)
+- `apps/web/lib/maps/google-maps-link.ts` (7.7.4)
 
 ---
 
@@ -319,7 +322,7 @@ describe('PaymentProfileForm', () => {
 });
 ```
 
-### 7.1.2 Settle-Up Execution UI ✅
+### 7.1.2 Settle-Up Execution UI ⚠️
 
 **Description:** Settlement workflow with payment method selection, confirmation, and status tracking.
 
@@ -327,18 +330,22 @@ describe('PaymentProfileForm', () => {
 ```
 apps/web/components/domain/settle-up-modal.tsx
 apps/web/components/domain/__tests__/settle-up-modal.test.tsx
+```
+
+**Files Not Yet Created:**
+```
 apps/web/components/domain/payment-method-selector.tsx
 apps/web/components/domain/__tests__/payment-method-selector.test.tsx
 ```
 
 **Tasks:**
-- [x] Write PaymentMethodSelector component tests
-- [x] Implement PaymentMethodSelector (Venmo, PayPal, CashApp, Cash, Other)
+- [ ] Write PaymentMethodSelector component tests
+- [ ] Implement PaymentMethodSelector (Venmo, PayPal, CashApp, Cash, Other)
 - [x] Write SettleUpModal component tests
 - [x] Implement SettleUpModal with settlement details and payment flow
 - [x] Add payment link generation using existing `/api/trips/[tripId]/payments/links`
 - [x] Integrate with POST `/api/trips/[tripId]/payments` to record payment
-- [x] Verify: Payment recorded and settlement updated
+- [ ] Verify: Payment recorded and settlement updated
 
 **Test Cases:**
 ```typescript
@@ -607,31 +614,35 @@ apps/web/components/domain/__tests__/poll-results-summary.test.tsx
 
 ---
 
-## Phase 7.3: Content Management UI (P1 - Important) ✅ COMPLETE
+## Phase 7.3: Content Management UI (P1 - Important) ⚠️ PARTIAL
 
 **Priority:** P1 - Important
 **Tests:** ~105 tests passing
 **Dependencies:** Existing media and expense APIs
 
-### 7.3.1 Photo Captions and Tags UI ✅
+### 7.3.1 Photo Captions and Tags UI ⚠️
 
 **Description:** Add/edit captions and tags for gallery photos.
 
 **Files Created:**
 ```
-apps/web/components/domain/media-edit-modal.tsx
-apps/web/components/domain/__tests__/media-edit-modal.test.tsx
 apps/web/components/domain/tag-input.tsx
 apps/web/components/domain/__tests__/tag-input.test.tsx
+```
+
+**Files Not Yet Created:**
+```
+apps/web/components/domain/media-edit-modal.tsx
+apps/web/components/domain/__tests__/media-edit-modal.test.tsx
 ```
 
 **Tasks:**
 - [x] Write TagInput component tests
 - [x] Implement TagInput with autocomplete from existing tags
-- [x] Write MediaEditModal component tests
-- [x] Implement MediaEditModal with caption and tag editing
+- [ ] Write MediaEditModal component tests
+- [ ] Implement MediaEditModal with caption and tag editing
 - [x] Integrate with PUT `/api/trips/[tripId]/media/[mediaId]`
-- [x] Verify: Caption and tags update correctly
+- [ ] Verify: Caption and tags update correctly
 
 **Test Cases:**
 ```typescript
