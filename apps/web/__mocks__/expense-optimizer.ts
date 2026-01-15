@@ -7,7 +7,7 @@ export function init_wasm(): void {
   // No-op
 }
 
-export function optimize_settlements(debts: unknown): unknown {
+export function optimize_settlements(_debts: unknown): unknown {
   // Default mock - tests will override this
   return {
     original_count: 0,
@@ -17,6 +17,6 @@ export function optimize_settlements(debts: unknown): unknown {
   };
 }
 
-export function validate_debts(debts: unknown): boolean {
+export function validate_debts(_debts: unknown): boolean {
   return true;
 }

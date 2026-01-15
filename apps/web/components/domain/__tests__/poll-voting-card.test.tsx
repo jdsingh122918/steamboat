@@ -113,6 +113,12 @@ describe('PollVotingCard', () => {
         expect(mockOnVote).toHaveBeenCalledWith(['opt-1']);
       });
 
+      // Wait for the component to re-render with the updated selection
+      // by checking that the first option shows the checkmark
+      await waitFor(() => {
+        expect(screen.getByTestId('poll-option-opt-1')).toHaveClass('selected');
+      });
+
       // Click another option
       fireEvent.click(screen.getByTestId('poll-option-opt-2'));
 

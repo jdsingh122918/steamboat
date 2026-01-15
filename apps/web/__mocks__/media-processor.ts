@@ -8,23 +8,23 @@ export function init_wasm(): void {
 }
 
 export function process_image_wasm(
-  data: Uint8Array,
-  max_dim: number,
-  quality: number
+  _data: Uint8Array,
+  _max_dim: number,
+  _quality: number
 ): unknown {
   return {
     data: new Uint8Array([0xff, 0xd8, 0xff, 0xe0]),
   };
 }
 
-export function extract_exif_wasm(data: Uint8Array): unknown {
+export function extract_exif_wasm(_data: Uint8Array): unknown {
   return {};
 }
 
 export function generate_thumbnail_wasm(
-  data: Uint8Array,
+  _data: Uint8Array,
   size: number,
-  crop: boolean
+  _crop: boolean
 ): unknown {
   return {
     data: new Uint8Array([0xff, 0xd8, 0xff, 0xe0]),
@@ -34,7 +34,7 @@ export function generate_thumbnail_wasm(
   };
 }
 
-export function compute_hashes_wasm(data: Uint8Array): unknown {
+export function compute_hashes_wasm(_data: Uint8Array): unknown {
   return {
     sha256: '0'.repeat(64),
     perceptual: '0'.repeat(16),

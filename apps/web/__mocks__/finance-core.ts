@@ -7,7 +7,7 @@ export function init_wasm(): void {
   // No-op
 }
 
-export function split_expense(expense: unknown): unknown {
+export function split_expense(_expense: unknown): unknown {
   return {
     per_person_cents: 0,
     shares: [],
@@ -15,6 +15,6 @@ export function split_expense(expense: unknown): unknown {
   };
 }
 
-export function calculate_all_balances(expenses: unknown): unknown {
+export function calculate_all_balances(_expenses: unknown): unknown {
   return [];
 }
