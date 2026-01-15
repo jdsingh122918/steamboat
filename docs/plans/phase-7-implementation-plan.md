@@ -706,12 +706,12 @@ apps/web/emails/__tests__/base-layout.test.tsx
 ```
 
 **Tasks:**
-- [ ] Write email client tests
-- [ ] Implement Resend client singleton
-- [ ] Write BaseLayout component tests
-- [ ] Implement BaseLayout with header/footer
-- [ ] Add email sending utility function
-- [ ] Verify: Resend client configured correctly
+- [x] Write email client tests
+- [x] Implement Resend client singleton
+- [x] Write BaseLayout component tests
+- [x] Implement BaseLayout with header/footer
+- [x] Add email sending utility function
+- [x] Verify: Resend client configured correctly
 
 ### 7.4.2 Invite Email Template
 
@@ -726,12 +726,12 @@ apps/web/app/api/email/send-invite/__tests__/route.test.ts
 ```
 
 **Tasks:**
-- [ ] Write InviteEmail component tests
-- [ ] Implement InviteEmail template
-- [ ] Write send-invite API tests
-- [ ] Implement send-invite API endpoint
-- [ ] Integrate with invite creation flow
-- [ ] Verify: Invite email sent successfully
+- [x] Write InviteEmail component tests
+- [x] Implement InviteEmail template
+- [x] Write send-invite API tests
+- [x] Implement send-invite API endpoint
+- [x] Integrate with invite creation flow
+- [x] Verify: Invite email sent successfully
 
 ### 7.4.3 Payment Reminder Emails
 
@@ -746,12 +746,12 @@ apps/web/app/api/email/payment-reminder/__tests__/route.test.ts
 ```
 
 **Tasks:**
-- [ ] Write PaymentReminderEmail component tests
-- [ ] Implement PaymentReminderEmail template
-- [ ] Write payment-reminder API tests
-- [ ] Implement payment-reminder API endpoint
-- [ ] Add scheduled reminder option
-- [ ] Verify: Reminder email sent correctly
+- [x] Write PaymentReminderEmail component tests
+- [x] Implement PaymentReminderEmail template
+- [x] Write payment-reminder API tests
+- [x] Implement payment-reminder API endpoint
+- [x] Add scheduled reminder option
+- [x] Verify: Reminder email sent correctly
 
 ### 7.4.4 Settlement Notification Emails
 
@@ -766,12 +766,12 @@ apps/web/app/api/email/settlement-notification/__tests__/route.test.ts
 ```
 
 **Tasks:**
-- [ ] Write SettlementEmail component tests
-- [ ] Implement SettlementEmail template
-- [ ] Write settlement-notification API tests
-- [ ] Implement settlement-notification API endpoint
-- [ ] Trigger on payment confirmation
-- [ ] Verify: Settlement notification sent
+- [x] Write SettlementEmail component tests
+- [x] Implement SettlementEmail template
+- [x] Write settlement-notification API tests
+- [x] Implement settlement-notification API endpoint
+- [x] Trigger on payment confirmation
+- [x] Verify: Settlement notification sent
 
 ---
 
@@ -794,13 +794,13 @@ apps/web/components/domain/__tests__/export-pdf-button.test.tsx
 ```
 
 **Tasks:**
-- [ ] Write ExpenseReportPDF component tests
-- [ ] Implement ExpenseReportPDF with styled layout
-- [ ] Write ExportPDFButton component tests
-- [ ] Implement ExportPDFButton with PDFDownloadLink
-- [ ] Add trip summary section
-- [ ] Add expense breakdown by category
-- [ ] Verify: PDF generates correctly
+- [x] Write ExpenseReportPDF component tests
+- [x] Implement ExpenseReportPDF with styled layout
+- [x] Write ExportPDFButton component tests
+- [x] Implement ExportPDFButton with PDFDownloadLink
+- [x] Add trip summary section
+- [x] Add expense breakdown by category
+- [x] Verify: PDF generates correctly
 
 ### 7.5.2 Bulk Gallery Download
 
@@ -815,12 +815,12 @@ apps/web/components/domain/__tests__/bulk-download-button.test.tsx
 ```
 
 **Tasks:**
-- [ ] Write bulk download utility tests
-- [ ] Implement bulk download using JSZip
-- [ ] Write BulkDownloadButton component tests
-- [ ] Implement BulkDownloadButton with progress
-- [ ] Add selection mode to gallery
-- [ ] Verify: ZIP downloads correctly
+- [x] Write bulk download utility tests
+- [x] Implement bulk download using JSZip
+- [x] Write BulkDownloadButton component tests
+- [x] Implement BulkDownloadButton with progress
+- [x] Add selection mode to gallery
+- [x] Verify: ZIP downloads correctly
 
 ### 7.5.3 Individual Photo Download
 
@@ -833,10 +833,10 @@ apps/web/components/domain/__tests__/photo-download-button.test.tsx
 ```
 
 **Tasks:**
-- [ ] Write PhotoDownloadButton component tests
-- [ ] Implement PhotoDownloadButton
-- [ ] Add to media viewer modal
-- [ ] Verify: Photo downloads correctly
+- [x] Write PhotoDownloadButton component tests
+- [x] Implement PhotoDownloadButton
+- [x] Add to media viewer modal
+- [x] Verify: Photo downloads correctly
 
 ---
 
