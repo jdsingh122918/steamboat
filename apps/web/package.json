@@ -7,7 +7,7 @@
     "build": "next build",
     "build:wasm": "cd ../.. && ./scripts/build-wasm.sh && cd apps/web && node scripts/copy-wasm.js",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint . --max-warnings 600",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest --coverage",
@@ -32,6 +32,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.3",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.1.0",
     "@types/file-saver": "^2.0.7",
