@@ -505,6 +505,28 @@ export type { BulkDownloadButtonProps } from './bulk-download-button';
 export { DownloadButton } from './download-button';
 export type { DownloadButtonProps } from './download-button';
 
+// Phase 7.1: Payment Flow Components
+export { PaymentProfileForm } from './payment-profile-form';
+export type { PaymentProfileFormProps } from './payment-profile-form';
+export { PaymentMethodSelector } from './payment-method-selector';
+export type { PaymentMethodSelectorProps, PaymentMethod } from './payment-method-selector';
+
+// Phase 7.2: Polls Components
+export { PollCreationForm } from './poll-creation-form';
+export type { PollCreationFormProps, PollData } from './poll-creation-form';
+export { PollVotingCard } from './poll-voting-card';
+export type { PollVotingCardProps } from './poll-voting-card';
+export { PollAdminActions } from './poll-admin-actions';
+export type { PollAdminActionsProps } from './poll-admin-actions';
+export { PollResultsSummary } from './poll-results-summary';
+export type { PollResultsSummaryProps, ResultOption } from './poll-results-summary';
+
+// Phase 7.3: Content Management Components
+export { TagInput } from './tag-input';
+export type { TagInputProps } from './tag-input';
+export { MediaEditModal } from './media-edit-modal';
+export type { MediaEditModalProps, MediaData, MediaEditData } from './media-edit-modal';
+
 export type {
   ExpenseCardProps,
   ExpenseCategory,
