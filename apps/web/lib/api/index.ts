@@ -3,10 +3,10 @@ export {
   isValidObjectId,
   errorResponse,
   successResponse,
-} from './utils.js';
+} from './utils';
 
 export {
   type ApiErrorType,
   handleApiError,
   handleTripAccessError,
-} from './error-handler.js';
+} from './error-handler';

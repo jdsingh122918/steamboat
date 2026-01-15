@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import type { ApiResponse } from './utils.js';
+import type { ApiResponse } from './utils';
 
 /**
  * Standard error types for API routes.

@@ -56,7 +56,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm run test
+        run: npm run test -- --run
 
   build:
     name: Production Build
@@ -84,3 +84,6 @@ jobs:
         run: npm run build
         env:
           SKIP_ENV_VALIDATION: 'true'
+          MONGODB_URI: 'mongodb://localhost:27017/test'
+          SESSION_SECRET: 'ci-test-secret-key-for-build-only'
+          NEXT_PUBLIC_APP_URL: 'http://localhost:3000'
