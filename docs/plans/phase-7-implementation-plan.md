@@ -268,7 +268,7 @@ export async function downloadPhotosAsZip(
 
 ---
 
-## Phase 7.1: Payment Flow Completion (P0 - Critical) ✅ COMPLETE
+## Phase 7.1: Payment Flow Completion (P0 - Critical) ⚠️ PARTIAL
 
 **Priority:** P0 - Critical Path
 **Tests:** 69 tests passing
@@ -420,7 +420,7 @@ describe('PaymentStatusActions', () => {
 
 ---
 
-## Phase 7.2: Polls UI (P0 - Critical) ✅ COMPLETE
+## Phase 7.2: Polls UI (P0 - Critical) ⚠️ PARTIAL
 
 **Priority:** P0 - Critical Path
 **Tests:** 134 tests passing
