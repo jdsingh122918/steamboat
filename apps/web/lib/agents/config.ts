@@ -61,13 +61,14 @@ export interface AgentConfig {
  */
 export function getAgentConfig(): AgentConfig {
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  const skipValidation = process.env.SKIP_ENV_VALIDATION === 'true';
 
-  if (!apiKey) {
+  if (!apiKey && !skipValidation) {
     throw new Error('ANTHROPIC_API_KEY is not set');
   }
 
   return {
-    apiKey,
+    apiKey: apiKey || '',
     defaultModel: AgentModel.SONNET,
     maxRetries: 3,
     timeout: 60000, // 60 seconds

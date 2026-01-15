@@ -52,13 +52,16 @@ const requiredVars = [
  * @param key - The environment variable key
  * @param isRequired - Whether this variable is required
  * @returns The value or empty string
- * @throws Error if required and missing in production
+ * @throws Error if required and missing in production (unless SKIP_ENV_VALIDATION is set)
  */
 function getEnvVar(key: string, isRequired: boolean): string {
   // Check both with and without NEXT_PUBLIC_ prefix
   const value = process.env[key] ?? process.env[`NEXT_PUBLIC_${key}`];
 
-  if (!value && isRequired && process.env.NODE_ENV === 'production') {
+  // Skip validation if SKIP_ENV_VALIDATION is set (for CI builds)
+  const skipValidation = process.env.SKIP_ENV_VALIDATION === 'true';
+
+  if (!value && isRequired && process.env.NODE_ENV === 'production' && !skipValidation) {
     throw new Error(
       `Missing required environment variable: ${key}. ` +
         `Please add it to your .env file or environment.`
