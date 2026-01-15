@@ -5,7 +5,7 @@
 **Project:** Steamboat - Bachelor party coordination platform
 **Phase 7 Focus:** Payment flow completion, Polls UI, Content management, Email system, Export enhancements, Admin features, and Profile/Media improvements.
 
-**Status:** `[~]` **PARTIALLY COMPLETE** (Components done, some pages missing)
+**Status:** `[~]` **PARTIALLY COMPLETE** (Some components and pages missing)
 
 **Test Results:**
 - Phase 7.1 Payment Flow: 69 tests ⚠️ Components partial, profile page + payment-method-selector missing
