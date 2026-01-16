@@ -31,8 +31,8 @@ const nextConfig: NextConfig = {
       };
     }
 
-    // In CI, use mocks instead of WASM modules
-    const isCI = process.env.CI === 'true';
+    // In CI/Vercel, use mocks instead of WASM modules (Rust not available)
+    const isCI = process.env.CI === 'true' || process.env.VERCEL === '1';
     if (isServer) {
       if (isCI) {
         // Use mock implementations in CI where WASM isn't built
