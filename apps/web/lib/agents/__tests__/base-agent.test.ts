@@ -1,15 +1,36 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock the Anthropic SDK
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    messages: {
-      create: vi.fn(),
-    },
-  })),
+// Mock the OpenRouter client
+vi.mock('../openrouter-client', () => ({
+  getOpenRouterClient: vi.fn(),
+  convertAnthropicMessages: vi.fn((messages) =>
+    messages.map((m: { role: string; content: string }) => ({
+      role: m.role,
+      content: m.content,
+    }))
+  ),
 }));
 
-import Anthropic from '@anthropic-ai/sdk';
+// Mock the agent config service
+vi.mock('../agent-config-service', () => ({
+  resolveAgentConfig: vi.fn().mockReturnValue({
+    modelId: 'anthropic/claude-3-haiku',
+    maxTokens: 4096,
+    temperature: 0.7,
+    enableFallback: true,
+    fallbackOrder: ['anthropic/claude-3.5-sonnet'],
+  }),
+  getCachedTripAISettings: vi.fn().mockResolvedValue(null),
+}));
+
+// Mock DB operations
+vi.mock('@/lib/db/operations/ai-settings', () => ({
+  getAISettings: vi.fn().mockResolvedValue(null),
+  getAISettingsByTripId: vi.fn().mockResolvedValue(null),
+  toAgentConfigFormat: vi.fn().mockReturnValue(null),
+}));
+
+import { getOpenRouterClient } from '../openrouter-client';
 import { BaseAgent, ExecuteOptions } from '../base-agent';
 import { AgentRole, AgentStatus, AgentRoleType, AgentResult } from '../types';
 
@@ -21,7 +42,7 @@ class TestAgent extends BaseAgent<{ tripId: string; data: string }, { result: st
     this.setProcessing();
 
     const result = await this.executeWithTracking({
-      model: 'claude-3-haiku-20240307',
+      model: 'anthropic/claude-3-haiku',
       maxTokens: 512,
       tripId: input.tripId,
       messages: [{ role: 'user', content: input.data }],
@@ -44,20 +65,18 @@ class TestAgent extends BaseAgent<{ tripId: string; data: string }, { result: st
 
 describe('BaseAgent', () => {
   let agent: TestAgent;
-  let mockAnthropicClient: { messages: { create: ReturnType<typeof vi.fn> } };
+  let mockExecute: ReturnType<typeof vi.fn>;
   const originalEnv = process.env;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env = { ...originalEnv, ANTHROPIC_API_KEY: 'test-api-key' };
-    mockAnthropicClient = {
-      messages: {
-        create: vi.fn(),
-      },
-    };
-    (Anthropic as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      () => mockAnthropicClient
-    );
+    process.env = { ...originalEnv, OPENROUTER_API_KEY: 'test-api-key' };
+
+    mockExecute = vi.fn();
+    (getOpenRouterClient as ReturnType<typeof vi.fn>).mockReturnValue({
+      execute: mockExecute,
+    });
+
     agent = new TestAgent();
   });
 
@@ -68,13 +87,6 @@ describe('BaseAgent', () => {
   describe('constructor', () => {
     it('should initialize with IDLE status', () => {
       expect(agent.getStatus()).toBe(AgentStatus.IDLE);
-    });
-
-    it('should throw error when API key is missing', () => {
-      process.env = { ...originalEnv };
-      delete process.env.ANTHROPIC_API_KEY;
-
-      expect(() => new TestAgent()).toThrow('ANTHROPIC_API_KEY is not set');
     });
   });
 
@@ -92,14 +104,21 @@ describe('BaseAgent', () => {
 
   describe('executeWithTracking', () => {
     it('should execute API call and return text content', async () => {
-      mockAnthropicClient.messages.create.mockResolvedValue({
-        id: 'msg_123',
-        content: [{ type: 'text', text: 'Test response' }],
-        usage: { input_tokens: 100, output_tokens: 50 },
+      mockExecute.mockResolvedValue({
+        success: true,
+        data: {
+          text: 'Test response',
+          inputTokens: 100,
+          outputTokens: 50,
+          model: 'anthropic/claude-3-haiku',
+          fallbackCount: 0,
+        },
+        modelUsed: 'anthropic/claude-3-haiku',
+        fallbackCount: 0,
       });
 
       const result = await agent.testExecuteWithTracking({
-        model: 'claude-3-haiku-20240307',
+        model: 'anthropic/claude-3-haiku',
         maxTokens: 512,
         tripId: 'trip123',
         messages: [{ role: 'user', content: 'Test message' }],
@@ -114,10 +133,15 @@ describe('BaseAgent', () => {
     });
 
     it('should return error when API call fails', async () => {
-      mockAnthropicClient.messages.create.mockRejectedValue(new Error('API Error'));
+      mockExecute.mockResolvedValue({
+        success: false,
+        error: 'API Error',
+        modelUsed: 'anthropic/claude-3-haiku',
+        fallbackCount: 0,
+      });
 
       const result = await agent.testExecuteWithTracking({
-        model: 'claude-3-haiku-20240307',
+        model: 'anthropic/claude-3-haiku',
         maxTokens: 512,
         tripId: 'trip123',
         messages: [{ role: 'user', content: 'Test' }],
@@ -129,15 +153,11 @@ describe('BaseAgent', () => {
       }
     });
 
-    it('should return error when no text content in response', async () => {
-      mockAnthropicClient.messages.create.mockResolvedValue({
-        id: 'msg_123',
-        content: [{ type: 'tool_use', id: 'tool_1', name: 'test', input: {} }],
-        usage: { input_tokens: 100, output_tokens: 50 },
-      });
+    it('should return error when execute throws', async () => {
+      mockExecute.mockRejectedValue(new Error('Network Error'));
 
       const result = await agent.testExecuteWithTracking({
-        model: 'claude-3-haiku-20240307',
+        model: 'anthropic/claude-3-haiku',
         maxTokens: 512,
         tripId: 'trip123',
         messages: [{ role: 'user', content: 'Test' }],
@@ -145,7 +165,7 @@ describe('BaseAgent', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error).toBe('No text content in response');
+        expect(result.error).toBe('Network Error');
       }
     });
   });
@@ -154,12 +174,19 @@ describe('BaseAgent', () => {
     it('should update status during processing', async () => {
       let statusDuringProcessing: string | null = null;
 
-      mockAnthropicClient.messages.create.mockImplementation(async () => {
+      mockExecute.mockImplementation(async () => {
         statusDuringProcessing = agent.getStatus();
         return {
-          id: 'msg_123',
-          content: [{ type: 'text', text: '{"result": "test"}' }],
-          usage: { input_tokens: 100, output_tokens: 50 },
+          success: true,
+          data: {
+            text: '{"result": "test"}',
+            inputTokens: 100,
+            outputTokens: 50,
+            model: 'anthropic/claude-3-haiku',
+            fallbackCount: 0,
+          },
+          modelUsed: 'anthropic/claude-3-haiku',
+          fallbackCount: 0,
         };
       });
 
@@ -169,10 +196,17 @@ describe('BaseAgent', () => {
     });
 
     it('should set COMPLETED status on success', async () => {
-      mockAnthropicClient.messages.create.mockResolvedValue({
-        id: 'msg_123',
-        content: [{ type: 'text', text: '{"result": "test"}' }],
-        usage: { input_tokens: 100, output_tokens: 50 },
+      mockExecute.mockResolvedValue({
+        success: true,
+        data: {
+          text: '{"result": "test"}',
+          inputTokens: 100,
+          outputTokens: 50,
+          model: 'anthropic/claude-3-haiku',
+          fallbackCount: 0,
+        },
+        modelUsed: 'anthropic/claude-3-haiku',
+        fallbackCount: 0,
       });
 
       await agent.process({ tripId: 'trip123', data: 'test' });
@@ -181,7 +215,12 @@ describe('BaseAgent', () => {
     });
 
     it('should set ERROR status on failure', async () => {
-      mockAnthropicClient.messages.create.mockRejectedValue(new Error('API Error'));
+      mockExecute.mockResolvedValue({
+        success: false,
+        error: 'API Error',
+        modelUsed: 'anthropic/claude-3-haiku',
+        fallbackCount: 0,
+      });
 
       await agent.process({ tripId: 'trip123', data: 'test' });
 
@@ -191,10 +230,17 @@ describe('BaseAgent', () => {
 
   describe('process', () => {
     it('should process input and return result', async () => {
-      mockAnthropicClient.messages.create.mockResolvedValue({
-        id: 'msg_123',
-        content: [{ type: 'text', text: 'Processed data' }],
-        usage: { input_tokens: 100, output_tokens: 50 },
+      mockExecute.mockResolvedValue({
+        success: true,
+        data: {
+          text: 'Processed data',
+          inputTokens: 100,
+          outputTokens: 50,
+          model: 'anthropic/claude-3-haiku',
+          fallbackCount: 0,
+        },
+        modelUsed: 'anthropic/claude-3-haiku',
+        fallbackCount: 0,
       });
 
       const result = await agent.process({ tripId: 'trip123', data: 'input data' });

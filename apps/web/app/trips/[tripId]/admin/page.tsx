@@ -6,6 +6,7 @@ import { Button, Spinner, Card, CardHeader, CardTitle, CardContent, Select } fro
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui';
 import { PageHeader } from '@/components/navigation';
 import { formatCurrency } from '@/lib/utils/format';
+import { AISettingsSection } from '@/components/domain';
 
 interface TripStats {
   totalExpenses: number;
@@ -222,6 +223,7 @@ export default function AdminPage() {
           <TabsList>
             <TabsTrigger value="statistics">Statistics</TabsTrigger>
             <TabsTrigger value="deleted">Deleted Items</TabsTrigger>
+            <TabsTrigger value="ai-settings">AI Settings</TabsTrigger>
             <TabsTrigger value="transfer">Admin Transfer</TabsTrigger>
           </TabsList>
 
@@ -368,6 +370,13 @@ export default function AdminPage() {
                   <p style={{ textAlign: 'center', color: '#666' }}>No deleted items found</p>
                 )}
               </div>
+            </div>
+          </TabsContent>
+
+          {/* AI Settings Tab */}
+          <TabsContent value="ai-settings">
+            <div className="admin-ai-settings" data-testid="ai-settings-tab">
+              <AISettingsSection tripId={tripId} />
             </div>
           </TabsContent>
 

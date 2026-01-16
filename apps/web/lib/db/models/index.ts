@@ -133,3 +133,19 @@ export {
   type UpdatePoll,
   type PollStatus,
 } from './poll';
+
+// AI Settings
+export {
+  AISettingsSchema,
+  AgentConfigSchema,
+  DefaultSettingsSchema,
+  CreateAISettingsSchema,
+  UpdateAISettingsSchema,
+  AgentRoles,
+  type AISettings,
+  type AgentConfig,
+  type DefaultSettings,
+  type CreateAISettings,
+  type UpdateAISettings,
+  type AgentRoleKey,
+} from './ai-settings';

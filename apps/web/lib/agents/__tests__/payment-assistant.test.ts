@@ -1,15 +1,36 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock the Anthropic SDK
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    messages: {
-      create: vi.fn(),
-    },
-  })),
+// Mock the OpenRouter client
+vi.mock('../openrouter-client', () => ({
+  getOpenRouterClient: vi.fn(),
+  convertAnthropicMessages: vi.fn((messages) =>
+    messages.map((m: { role: string; content: unknown }) => ({
+      role: m.role,
+      content: m.content,
+    }))
+  ),
 }));
 
-import Anthropic from '@anthropic-ai/sdk';
+// Mock the agent config service
+vi.mock('../agent-config-service', () => ({
+  resolveAgentConfig: vi.fn().mockReturnValue({
+    modelId: 'anthropic/claude-3.5-sonnet',
+    maxTokens: 4096,
+    temperature: 0.7,
+    enableFallback: true,
+    fallbackOrder: ['openai/gpt-4o'],
+  }),
+  getCachedTripAISettings: vi.fn().mockResolvedValue(null),
+}));
+
+// Mock DB operations
+vi.mock('@/lib/db/operations/ai-settings', () => ({
+  getAISettings: vi.fn().mockResolvedValue(null),
+  getAISettingsByTripId: vi.fn().mockResolvedValue(null),
+  toAgentConfigFormat: vi.fn().mockReturnValue(null),
+}));
+
+import { getOpenRouterClient } from '../openrouter-client';
 import {
   PaymentAssistant,
   parsePaymentResponse,
@@ -21,20 +42,18 @@ import { AgentRole, AgentStatus, PaymentSplit, SettlementSuggestion } from '../t
 
 describe('Payment Assistant Agent', () => {
   let assistant: PaymentAssistant;
-  let mockAnthropicClient: { messages: { create: ReturnType<typeof vi.fn> } };
+  let mockExecute: ReturnType<typeof vi.fn>;
   const originalEnv = process.env;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env = { ...originalEnv, ANTHROPIC_API_KEY: 'test-api-key' };
-    mockAnthropicClient = {
-      messages: {
-        create: vi.fn(),
-      },
-    };
-    (Anthropic as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      () => mockAnthropicClient
-    );
+    process.env = { ...originalEnv, OPENROUTER_API_KEY: 'test-api-key' };
+
+    mockExecute = vi.fn();
+    (getOpenRouterClient as ReturnType<typeof vi.fn>).mockReturnValue({
+      execute: mockExecute,
+    });
+
     assistant = new PaymentAssistant();
   });
 
@@ -44,25 +63,24 @@ describe('Payment Assistant Agent', () => {
 
   describe('calculateSplit', () => {
     it('should calculate equal split successfully', async () => {
-      mockAnthropicClient.messages.create.mockResolvedValue({
-        id: 'msg_123',
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              splits: [
-                { participantId: 'user1', amount: 33.33, isPaid: false },
-                { participantId: 'user2', amount: 33.33, isPaid: false },
-                { participantId: 'user3', amount: 33.34, isPaid: false },
-              ],
-              reasoning: 'Equal split among 3 participants',
-            }),
-          },
-        ],
-        usage: {
-          input_tokens: 500,
-          output_tokens: 150,
+      mockExecute.mockResolvedValue({
+        success: true,
+        data: {
+          text: JSON.stringify({
+            splits: [
+              { participantId: 'user1', amount: 33.33, isPaid: false },
+              { participantId: 'user2', amount: 33.33, isPaid: false },
+              { participantId: 'user3', amount: 33.34, isPaid: false },
+            ],
+            reasoning: 'Equal split among 3 participants',
+          }),
+          inputTokens: 500,
+          outputTokens: 150,
+          model: 'anthropic/claude-3.5-sonnet',
+          fallbackCount: 0,
         },
+        modelUsed: 'anthropic/claude-3.5-sonnet',
+        fallbackCount: 0,
       });
 
       const result = await assistant.calculateSplit({
@@ -81,25 +99,24 @@ describe('Payment Assistant Agent', () => {
     });
 
     it('should handle exemptions', async () => {
-      mockAnthropicClient.messages.create.mockResolvedValue({
-        id: 'msg_123',
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              splits: [
-                { participantId: 'groom', amount: 0, isPaid: true },
-                { participantId: 'user2', amount: 50, isPaid: false },
-                { participantId: 'user3', amount: 50, isPaid: false },
-              ],
-              reasoning: 'Groom is exempt from this expense',
-            }),
-          },
-        ],
-        usage: {
-          input_tokens: 600,
-          output_tokens: 180,
+      mockExecute.mockResolvedValue({
+        success: true,
+        data: {
+          text: JSON.stringify({
+            splits: [
+              { participantId: 'groom', amount: 0, isPaid: true },
+              { participantId: 'user2', amount: 50, isPaid: false },
+              { participantId: 'user3', amount: 50, isPaid: false },
+            ],
+            reasoning: 'Groom is exempt from this expense',
+          }),
+          inputTokens: 600,
+          outputTokens: 180,
+          model: 'anthropic/claude-3.5-sonnet',
+          fallbackCount: 0,
         },
+        modelUsed: 'anthropic/claude-3.5-sonnet',
+        fallbackCount: 0,
       });
 
       const result = await assistant.calculateSplit({
@@ -118,9 +135,12 @@ describe('Payment Assistant Agent', () => {
     });
 
     it('should handle API errors', async () => {
-      mockAnthropicClient.messages.create.mockRejectedValue(
-        new Error('Service unavailable')
-      );
+      mockExecute.mockResolvedValue({
+        success: false,
+        error: 'Service unavailable',
+        modelUsed: 'anthropic/claude-3.5-sonnet',
+        fallbackCount: 0,
+      });
 
       const result = await assistant.calculateSplit({
         amount: 100.0,
@@ -135,29 +155,28 @@ describe('Payment Assistant Agent', () => {
 
   describe('suggestSettlements', () => {
     it('should suggest optimal settlements', async () => {
-      mockAnthropicClient.messages.create.mockResolvedValue({
-        id: 'msg_123',
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              settlements: [
-                {
-                  fromUserId: 'user2',
-                  toUserId: 'user1',
-                  amount: 50.0,
-                  method: 'venmo',
-                  reason: 'Balance settlement for trip expenses',
-                },
-              ],
-              summary: 'Single payment to settle all balances',
-            }),
-          },
-        ],
-        usage: {
-          input_tokens: 800,
-          output_tokens: 200,
+      mockExecute.mockResolvedValue({
+        success: true,
+        data: {
+          text: JSON.stringify({
+            settlements: [
+              {
+                fromUserId: 'user2',
+                toUserId: 'user1',
+                amount: 50.0,
+                method: 'venmo',
+                reason: 'Balance settlement for trip expenses',
+              },
+            ],
+            summary: 'Single payment to settle all balances',
+          }),
+          inputTokens: 800,
+          outputTokens: 200,
+          model: 'anthropic/claude-3.5-sonnet',
+          fallbackCount: 0,
         },
+        modelUsed: 'anthropic/claude-3.5-sonnet',
+        fallbackCount: 0,
       });
 
       const result = await assistant.suggestSettlements({
@@ -178,29 +197,28 @@ describe('Payment Assistant Agent', () => {
     });
 
     it('should minimize number of transactions', async () => {
-      mockAnthropicClient.messages.create.mockResolvedValue({
-        id: 'msg_123',
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              settlements: [
-                {
-                  fromUserId: 'user3',
-                  toUserId: 'user1',
-                  amount: 75.0,
-                  method: 'venmo',
-                  reason: 'Consolidated settlement',
-                },
-              ],
-              summary: 'Optimized to single payment',
-            }),
-          },
-        ],
-        usage: {
-          input_tokens: 900,
-          output_tokens: 220,
+      mockExecute.mockResolvedValue({
+        success: true,
+        data: {
+          text: JSON.stringify({
+            settlements: [
+              {
+                fromUserId: 'user3',
+                toUserId: 'user1',
+                amount: 75.0,
+                method: 'venmo',
+                reason: 'Consolidated settlement',
+              },
+            ],
+            summary: 'Optimized to single payment',
+          }),
+          inputTokens: 900,
+          outputTokens: 220,
+          model: 'anthropic/claude-3.5-sonnet',
+          fallbackCount: 0,
         },
+        modelUsed: 'anthropic/claude-3.5-sonnet',
+        fallbackCount: 0,
       });
 
       const result = await assistant.suggestSettlements({

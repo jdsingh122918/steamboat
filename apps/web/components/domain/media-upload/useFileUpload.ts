@@ -2,14 +2,12 @@
 
 import { useState, useRef, useCallback } from 'react';
 import {
-  uploadToCloudinary,
-  getCloudinaryThumbnailUrl,
+  uploadFile,
   getMediaTypeFromFile,
   validateUploadFile,
-  type UploadUrlData,
-  type CloudinaryUploadResponse,
-  CloudinaryUploadError,
-} from '@/lib/utils/cloudinary-upload';
+  type BlobUploadResponse,
+  BlobUploadClientError,
+} from '@/lib/utils/blob-upload-client';
 
 /**
  * File with upload state tracking.
@@ -22,7 +20,7 @@ export interface FileWithState {
   status: 'pending' | 'uploading' | 'success' | 'error';
   progress: number;
   error?: string;
-  result?: CloudinaryUploadResponse;
+  result?: BlobUploadResponse;
 }
 
 /**
@@ -34,6 +32,11 @@ export interface MediaUploadResult {
   type: 'photo' | 'video';
   fileSize: number;
   caption?: string;
+  dimensions?: {
+    width: number;
+    height: number;
+  };
+  duration?: number;
 }
 
 /**
@@ -82,7 +85,7 @@ function createPreviewUrl(file: File): string {
 /**
  * Custom hook for managing file uploads.
  *
- * Handles file state, validation, progress tracking, and Cloudinary uploads.
+ * Handles file state, validation, progress tracking, and Vercel Blob uploads.
  */
 export function useFileUpload({
   tripId,
@@ -95,31 +98,10 @@ export function useFileUpload({
   const abortControllerRef = useRef<AbortController | null>(null);
 
   /**
-   * Get signed upload URL from server.
-   */
-  const getUploadUrl = async (
-    mediaType: 'photo' | 'video'
-  ): Promise<UploadUrlData> => {
-    const response = await fetch(`/api/trips/${tripId}/media/upload-url`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: mediaType }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Failed to get upload URL');
-    }
-
-    const data = await response.json();
-    return data.data;
-  };
-
-  /**
    * Create media record in database.
    */
   const createMediaRecord = async (
-    result: CloudinaryUploadResponse,
+    result: BlobUploadResponse,
     mediaType: 'photo' | 'video',
     caption?: string
   ): Promise<void> => {
@@ -127,11 +109,13 @@ export function useFileUpload({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        url: result.secure_url,
-        thumbnailUrl: getCloudinaryThumbnailUrl(result.secure_url),
+        url: result.url,
+        thumbnailUrl: result.thumbnailUrl,
         type: mediaType,
-        fileSize: result.bytes,
+        fileSize: result.size,
         caption: caption || undefined,
+        dimensions: result.dimensions,
+        duration: result.duration,
       }),
     });
 
@@ -144,7 +128,7 @@ export function useFileUpload({
   /**
    * Upload a single file.
    */
-  const uploadFile = async (
+  const uploadSingleFile = async (
     fileState: FileWithState,
     abortSignal: AbortSignal
   ): Promise<MediaUploadResult | null> => {
@@ -158,11 +142,8 @@ export function useFileUpload({
     );
 
     try {
-      // Get signed upload URL
-      const uploadData = await getUploadUrl(mediaType);
-
-      // Upload to Cloudinary
-      const result = await uploadToCloudinary(fileState.file, uploadData, {
+      // Upload to Vercel Blob via API
+      const result = await uploadFile(fileState.file, tripId, {
         onProgress: (progress) => {
           setFiles((prev) =>
             prev.map((f) => (f.id === fileState.id ? { ...f, progress } : f))
@@ -184,16 +165,18 @@ export function useFileUpload({
       );
 
       return {
-        url: result.secure_url,
-        thumbnailUrl: getCloudinaryThumbnailUrl(result.secure_url),
+        url: result.url,
+        thumbnailUrl: result.thumbnailUrl,
         type: mediaType,
-        fileSize: result.bytes,
+        fileSize: result.size,
         caption: fileState.caption || undefined,
+        dimensions: result.dimensions,
+        duration: result.duration,
       };
     } catch (error) {
       // Check if cancelled
       if (
-        error instanceof CloudinaryUploadError &&
+        error instanceof BlobUploadClientError &&
         error.message === 'Upload cancelled'
       ) {
         return null;
@@ -279,7 +262,7 @@ export function useFileUpload({
     for (const fileState of pendingFiles) {
       if (abortControllerRef.current.signal.aborted) break;
 
-      const result = await uploadFile(
+      const result = await uploadSingleFile(
         fileState,
         abortControllerRef.current.signal
       );

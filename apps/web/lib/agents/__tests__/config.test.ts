@@ -1,12 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock the Anthropic SDK
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    messages: {
-      create: vi.fn(),
-    },
-  })),
+// Mock the OpenRouter client
+vi.mock('../openrouter-client', () => ({
+  getOpenRouterClient: vi.fn().mockReturnValue({
+    createCompletion: vi.fn(),
+    execute: vi.fn(),
+  }),
 }));
 
 import {
@@ -30,19 +29,19 @@ describe('Agent Config', () => {
 
   describe('getAgentConfig', () => {
     it('should return valid config with API key', () => {
-      process.env.ANTHROPIC_API_KEY = 'test-api-key';
+      process.env.OPENROUTER_API_KEY = 'test-api-key';
       const config = getAgentConfig();
       expect(config).toBeDefined();
       expect(config.apiKey).toBe('test-api-key');
     });
 
     it('should throw error if API key is missing', () => {
-      delete process.env.ANTHROPIC_API_KEY;
-      expect(() => getAgentConfig()).toThrow('ANTHROPIC_API_KEY is not set');
+      delete process.env.OPENROUTER_API_KEY;
+      expect(() => getAgentConfig()).toThrow('OPENROUTER_API_KEY is not set');
     });
 
     it('should have default model settings', () => {
-      process.env.ANTHROPIC_API_KEY = 'test-api-key';
+      process.env.OPENROUTER_API_KEY = 'test-api-key';
       const config = getAgentConfig();
       expect(config.defaultModel).toBeDefined();
       expect(config.maxRetries).toBeGreaterThan(0);
@@ -51,32 +50,34 @@ describe('Agent Config', () => {
 
   describe('createAgentClient', () => {
     it('should create a client instance', () => {
-      process.env.ANTHROPIC_API_KEY = 'test-api-key';
+      process.env.OPENROUTER_API_KEY = 'test-api-key';
       const client = createAgentClient();
       expect(client).toBeDefined();
     });
 
-    it('should use API key from config', () => {
-      process.env.ANTHROPIC_API_KEY = 'test-api-key';
+    it('should have createCompletion method', () => {
+      process.env.OPENROUTER_API_KEY = 'test-api-key';
       const client = createAgentClient();
       expect(client).toBeDefined();
+      expect(client.createCompletion).toBeDefined();
     });
   });
 
   describe('AgentModel', () => {
-    it('should have HAIKU model for cost-effective tasks', () => {
+    it('should have HAIKU model mapped to OpenRouter format', () => {
       expect(AgentModel.HAIKU).toBeDefined();
-      expect(AgentModel.HAIKU).toBe('claude-3-haiku-20240307');
+      expect(AgentModel.HAIKU).toBe('anthropic/claude-3-haiku');
     });
 
-    it('should have SONNET model for balanced tasks', () => {
+    it('should have SONNET model mapped to OpenRouter format', () => {
       expect(AgentModel.SONNET).toBeDefined();
-      expect(AgentModel.SONNET).toBe('claude-sonnet-4-20250514');
+      expect(AgentModel.SONNET).toBe('anthropic/claude-3.5-sonnet');
     });
 
-    it('should have OPUS model for complex tasks', () => {
+    it('should have OPUS model mapped to OpenRouter format', () => {
       expect(AgentModel.OPUS).toBeDefined();
-      expect(AgentModel.OPUS).toBe('claude-opus-4-20250514');
+      // OPUS maps to sonnet in OpenRouter as opus isn't available
+      expect(AgentModel.OPUS).toBe('anthropic/claude-3.5-sonnet');
     });
   });
 
@@ -89,10 +90,10 @@ describe('Agent Config', () => {
       expect(config.costPer1kOutputTokens).toBeDefined();
     });
 
-    it('should have lower costs for HAIKU than OPUS', () => {
+    it('should have lower costs for HAIKU than SONNET', () => {
       const haikuConfig = getModelConfig(AgentModel.HAIKU);
-      const opusConfig = getModelConfig(AgentModel.OPUS);
-      expect(haikuConfig.costPer1kInputTokens).toBeLessThan(opusConfig.costPer1kInputTokens);
+      const sonnetConfig = getModelConfig(AgentModel.SONNET);
+      expect(haikuConfig.costPer1kInputTokens).toBeLessThan(sonnetConfig.costPer1kInputTokens);
     });
 
     it('should have appropriate max tokens for each model', () => {
@@ -100,6 +101,13 @@ describe('Agent Config', () => {
       const sonnetConfig = getModelConfig(AgentModel.SONNET);
       expect(haikuConfig.maxTokens).toBeGreaterThan(0);
       expect(sonnetConfig.maxTokens).toBeGreaterThan(0);
+    });
+
+    it('should return defaults for unknown models', () => {
+      const config = getModelConfig('unknown/model');
+      expect(config).toBeDefined();
+      expect(config.name).toBe('unknown/model');
+      expect(config.maxTokens).toBe(4096);
     });
   });
 });

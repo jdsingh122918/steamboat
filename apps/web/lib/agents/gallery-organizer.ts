@@ -12,7 +12,7 @@ import {
   createSuccessResult,
   createErrorResult,
 } from './types';
-import { AgentModel } from './config';
+import { getDefaultModelForRole } from './model-registry';
 import { BaseAgent } from './base-agent';
 import { parseJsonResponse } from './parse-json-response';
 
@@ -76,9 +76,10 @@ export class GalleryOrganizer extends BaseAgent<OrganizeInput, OrganizationResul
     this.setProcessing();
 
     const dateGroups = groupMediaByDate(input.media);
+    const defaultModel = getDefaultModelForRole(this.role);
 
     const result = await this.executeWithTracking({
-      model: AgentModel.HAIKU,
+      model: defaultModel,
       maxTokens: 1024,
       tripId: input.tripId,
       messages: [

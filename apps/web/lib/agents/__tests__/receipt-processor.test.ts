@@ -1,15 +1,36 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock the Anthropic SDK
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    messages: {
-      create: vi.fn(),
-    },
-  })),
+// Mock the OpenRouter client
+vi.mock('../openrouter-client', () => ({
+  getOpenRouterClient: vi.fn(),
+  convertAnthropicMessages: vi.fn((messages) =>
+    messages.map((m: { role: string; content: unknown }) => ({
+      role: m.role,
+      content: m.content,
+    }))
+  ),
 }));
 
-import Anthropic from '@anthropic-ai/sdk';
+// Mock the agent config service
+vi.mock('../agent-config-service', () => ({
+  resolveAgentConfig: vi.fn().mockReturnValue({
+    modelId: 'anthropic/claude-3.5-sonnet',
+    maxTokens: 4096,
+    temperature: 0.7,
+    enableFallback: true,
+    fallbackOrder: ['openai/gpt-4o'],
+  }),
+  getCachedTripAISettings: vi.fn().mockResolvedValue(null),
+}));
+
+// Mock DB operations
+vi.mock('@/lib/db/operations/ai-settings', () => ({
+  getAISettings: vi.fn().mockResolvedValue(null),
+  getAISettingsByTripId: vi.fn().mockResolvedValue(null),
+  toAgentConfigFormat: vi.fn().mockReturnValue(null),
+}));
+
+import { getOpenRouterClient } from '../openrouter-client';
 import {
   ReceiptProcessor,
   parseReceiptResponse,
@@ -19,20 +40,18 @@ import { AgentRole, AgentStatus } from '../types';
 
 describe('Receipt Processor Agent', () => {
   let processor: ReceiptProcessor;
-  let mockAnthropicClient: { messages: { create: ReturnType<typeof vi.fn> } };
+  let mockExecute: ReturnType<typeof vi.fn>;
   const originalEnv = process.env;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env = { ...originalEnv, ANTHROPIC_API_KEY: 'test-api-key' };
-    mockAnthropicClient = {
-      messages: {
-        create: vi.fn(),
-      },
-    };
-    (Anthropic as unknown as ReturnType<typeof vi.fn>).mockImplementation(
-      () => mockAnthropicClient
-    );
+    process.env = { ...originalEnv, OPENROUTER_API_KEY: 'test-api-key' };
+
+    mockExecute = vi.fn();
+    (getOpenRouterClient as ReturnType<typeof vi.fn>).mockReturnValue({
+      execute: mockExecute,
+    });
+
     processor = new ReceiptProcessor();
   });
 
@@ -42,29 +61,28 @@ describe('Receipt Processor Agent', () => {
 
   describe('processReceipt', () => {
     it('should process a receipt image successfully', async () => {
-      mockAnthropicClient.messages.create.mockResolvedValue({
-        id: 'msg_123',
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              vendor: 'Restaurant ABC',
-              date: '2024-03-15',
-              amount: 125.50,
-              currency: 'USD',
-              category: 'dining',
-              items: [
-                { name: 'Steak', quantity: 2, price: 45.00 },
-                { name: 'Wine', quantity: 1, price: 35.50 },
-              ],
-              confidence: 0.95,
-            }),
-          },
-        ],
-        usage: {
-          input_tokens: 1500,
-          output_tokens: 200,
+      mockExecute.mockResolvedValue({
+        success: true,
+        data: {
+          text: JSON.stringify({
+            vendor: 'Restaurant ABC',
+            date: '2024-03-15',
+            amount: 125.50,
+            currency: 'USD',
+            category: 'dining',
+            items: [
+              { name: 'Steak', quantity: 2, price: 45.00 },
+              { name: 'Wine', quantity: 1, price: 35.50 },
+            ],
+            confidence: 0.95,
+          }),
+          inputTokens: 1500,
+          outputTokens: 200,
+          model: 'anthropic/claude-3.5-sonnet',
+          fallbackCount: 0,
         },
+        modelUsed: 'anthropic/claude-3.5-sonnet',
+        fallbackCount: 0,
       });
 
       const result = await processor.processReceipt({
@@ -82,9 +100,12 @@ describe('Receipt Processor Agent', () => {
     });
 
     it('should handle API errors gracefully', async () => {
-      mockAnthropicClient.messages.create.mockRejectedValue(
-        new Error('API rate limit exceeded')
-      );
+      mockExecute.mockResolvedValue({
+        success: false,
+        error: 'API rate limit exceeded',
+        modelUsed: 'anthropic/claude-3.5-sonnet',
+        fallbackCount: 0,
+      });
 
       const result = await processor.processReceipt({
         imageUrl: 'https://example.com/receipt.jpg',
@@ -99,18 +120,17 @@ describe('Receipt Processor Agent', () => {
     });
 
     it('should handle invalid JSON response', async () => {
-      mockAnthropicClient.messages.create.mockResolvedValue({
-        id: 'msg_123',
-        content: [
-          {
-            type: 'text',
-            text: 'This is not valid JSON',
-          },
-        ],
-        usage: {
-          input_tokens: 1000,
-          output_tokens: 50,
+      mockExecute.mockResolvedValue({
+        success: true,
+        data: {
+          text: 'This is not valid JSON',
+          inputTokens: 1000,
+          outputTokens: 50,
+          model: 'anthropic/claude-3.5-sonnet',
+          fallbackCount: 0,
         },
+        modelUsed: 'anthropic/claude-3.5-sonnet',
+        fallbackCount: 0,
       });
 
       const result = await processor.processReceipt({
@@ -126,24 +146,23 @@ describe('Receipt Processor Agent', () => {
     });
 
     it('should track token usage', async () => {
-      mockAnthropicClient.messages.create.mockResolvedValue({
-        id: 'msg_123',
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              vendor: 'Store',
-              date: '2024-03-15',
-              amount: 50.00,
-              currency: 'USD',
-              confidence: 0.9,
-            }),
-          },
-        ],
-        usage: {
-          input_tokens: 1200,
-          output_tokens: 150,
+      mockExecute.mockResolvedValue({
+        success: true,
+        data: {
+          text: JSON.stringify({
+            vendor: 'Store',
+            date: '2024-03-15',
+            amount: 50.00,
+            currency: 'USD',
+            confidence: 0.9,
+          }),
+          inputTokens: 1200,
+          outputTokens: 150,
+          model: 'anthropic/claude-3.5-sonnet',
+          fallbackCount: 0,
         },
+        modelUsed: 'anthropic/claude-3.5-sonnet',
+        fallbackCount: 0,
       });
 
       const result = await processor.processReceipt({
@@ -160,24 +179,23 @@ describe('Receipt Processor Agent', () => {
     });
 
     it('should use correct agent role', async () => {
-      mockAnthropicClient.messages.create.mockResolvedValue({
-        id: 'msg_123',
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              vendor: 'Store',
-              date: '2024-03-15',
-              amount: 50.00,
-              currency: 'USD',
-              confidence: 0.9,
-            }),
-          },
-        ],
-        usage: {
-          input_tokens: 1000,
-          output_tokens: 100,
+      mockExecute.mockResolvedValue({
+        success: true,
+        data: {
+          text: JSON.stringify({
+            vendor: 'Store',
+            date: '2024-03-15',
+            amount: 50.00,
+            currency: 'USD',
+            confidence: 0.9,
+          }),
+          inputTokens: 1000,
+          outputTokens: 100,
+          model: 'anthropic/claude-3.5-sonnet',
+          fallbackCount: 0,
         },
+        modelUsed: 'anthropic/claude-3.5-sonnet',
+        fallbackCount: 0,
       });
 
       await processor.processReceipt({
@@ -186,7 +204,7 @@ describe('Receipt Processor Agent', () => {
         userId: 'user456',
       });
 
-      expect(mockAnthropicClient.messages.create).toHaveBeenCalled();
+      expect(mockExecute).toHaveBeenCalled();
     });
   });
 

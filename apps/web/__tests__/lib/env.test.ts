@@ -21,12 +21,12 @@ describe('Environment Configuration', () => {
       expect(env.MONGODB_URI).toBe('mongodb://localhost:27017/test');
     });
 
-    it('should export ANTHROPIC_API_KEY when set', async () => {
-      process.env.ANTHROPIC_API_KEY = 'sk-ant-test-key';
+    it('should export OPENROUTER_API_KEY when set', async () => {
+      process.env.OPENROUTER_API_KEY = 'sk-or-test-key';
 
       const { env } = await import('@/lib/env');
 
-      expect(env.ANTHROPIC_API_KEY).toBe('sk-ant-test-key');
+      expect(env.OPENROUTER_API_KEY).toBe('sk-or-test-key');
     });
 
     it('should throw error when MONGODB_URI is missing in production', async () => {
@@ -46,17 +46,13 @@ describe('Environment Configuration', () => {
     });
   });
 
-  describe('Cloudinary configuration', () => {
-    it('should export all Cloudinary variables', async () => {
-      process.env.CLOUDINARY_CLOUD_NAME = 'my-cloud';
-      process.env.CLOUDINARY_API_KEY = '123456789';
-      process.env.CLOUDINARY_API_SECRET = 'secret123';
+  describe('Vercel Blob configuration', () => {
+    it('should export BLOB_READ_WRITE_TOKEN', async () => {
+      process.env.BLOB_READ_WRITE_TOKEN = 'vercel_blob_test_token';
 
       const { env } = await import('@/lib/env');
 
-      expect(env.CLOUDINARY_CLOUD_NAME).toBe('my-cloud');
-      expect(env.CLOUDINARY_API_KEY).toBe('123456789');
-      expect(env.CLOUDINARY_API_SECRET).toBe('secret123');
+      expect(env.BLOB_READ_WRITE_TOKEN).toBe('vercel_blob_test_token');
     });
   });
 
@@ -100,10 +96,8 @@ describe('Environment Configuration', () => {
     it('should return valid: true when all required vars are set', async () => {
       process.env.MONGODB_URI = 'mongodb://localhost';
       process.env.SESSION_SECRET = 'test-session-secret-at-least-32-chars';
-      process.env.ANTHROPIC_API_KEY = 'sk-test';
-      process.env.CLOUDINARY_CLOUD_NAME = 'cloud';
-      process.env.CLOUDINARY_API_KEY = 'key';
-      process.env.CLOUDINARY_API_SECRET = 'secret';
+      process.env.OPENROUTER_API_KEY = 'sk-or-test';
+      process.env.BLOB_READ_WRITE_TOKEN = 'vercel_blob_token';
       process.env.PUSHER_APP_ID = 'app';
       process.env.PUSHER_SECRET = 'secret';
 
@@ -117,14 +111,14 @@ describe('Environment Configuration', () => {
     it('should return missing vars when some are not set', async () => {
       (process.env as Record<string, string | undefined>).NODE_ENV = 'development';
       delete process.env.MONGODB_URI;
-      delete process.env.ANTHROPIC_API_KEY;
+      delete process.env.OPENROUTER_API_KEY;
 
       const { validateEnv } = await import('@/lib/env');
       const result = validateEnv();
 
       expect(result.valid).toBe(false);
       expect(result.missing).toContain('MONGODB_URI');
-      expect(result.missing).toContain('ANTHROPIC_API_KEY');
+      expect(result.missing).toContain('OPENROUTER_API_KEY');
     });
   });
 });

@@ -146,3 +146,16 @@ export {
   getPollResults,
   hasVoted,
 } from './polls';
+
+// AI Settings operations
+export {
+  getAISettings,
+  getAISettingsByTripId,
+  createAISettings,
+  updateAISettings,
+  updateAgentConfig,
+  deleteAISettings,
+  getOrCreateAISettings,
+  resetAISettings,
+  toAgentConfigFormat,
+} from './ai-settings';

@@ -54,6 +54,56 @@ export {
   POLL_DECISION_PROMPT,
 } from './prompts';
 
+// Model Registry
+export {
+  MODEL_REGISTRY,
+  getModelDefinition,
+  getDefaultModelForRole,
+  getModelsForRole,
+  calculateModelCostFromRegistry,
+  getVisionCapableModels,
+  type ModelDefinition,
+  type ModelCapabilities,
+  type ModelPricing,
+} from './model-registry';
+
+// OpenRouter Client
+export {
+  getOpenRouterClient,
+  convertAnthropicMessages,
+  type OpenRouterClient,
+  type ChatMessage,
+  type ChatCompletionRequest,
+  type ChatCompletionResponse,
+  type ContentPart,
+  type TextContent,
+  type ImageContent,
+} from './openrouter-client';
+
+// Fallback Handler
+export {
+  executeWithFallback,
+  shouldTriggerFallback,
+  getNextFallbackModel,
+  getFallbackChain,
+  type FallbackOptions,
+  type FallbackResult,
+} from './fallback-handler';
+
+// Agent Config Service
+export {
+  resolveAgentConfig,
+  getCachedTripAISettings,
+  clearAISettingsCache,
+  invalidateTripAISettingsCache,
+  validateTripAISettings,
+  createDefaultTripAISettings,
+  mergeTripAISettings,
+  getModelForConfig,
+  type AgentRuntimeConfig,
+  type TripAISettings,
+} from './agent-config-service';
+
 // Cost Tracking
 export {
   CostTracker,

@@ -3,14 +3,16 @@
  *
  * Tracks AI agent usage and costs for metering and analytics.
  * Provides summaries by model, role, and trip.
+ * Uses dynamic pricing lookup from model registry.
  */
 
-import { AgentModelType, getModelConfig } from './config';
+import { calculateModelCostFromRegistry } from './model-registry';
 import { AgentRoleType } from './types';
 
 export interface CostEntry {
   id: string;
-  model: AgentModelType;
+  /** Model ID in OpenRouter format (e.g., 'anthropic/claude-3.5-sonnet') */
+  model: string;
   role: AgentRoleType;
   inputTokens: number;
   outputTokens: number;
@@ -20,7 +22,8 @@ export interface CostEntry {
 }
 
 export interface UsageInput {
-  model: AgentModelType;
+  /** Model ID in OpenRouter format */
+  model: string;
   role: AgentRoleType;
   inputTokens: number;
   outputTokens: number;
@@ -45,16 +48,14 @@ export interface CostSummary {
 
 /**
  * Calculate cost for a given model and token counts
+ * Uses dynamic pricing from model registry
  */
 export function calculateModelCost(
-  model: AgentModelType,
+  model: string,
   inputTokens: number,
   outputTokens: number
 ): number {
-  const config = getModelConfig(model);
-  const inputCost = (inputTokens / 1000) * config.costPer1kInputTokens;
-  const outputCost = (outputTokens / 1000) * config.costPer1kOutputTokens;
-  return inputCost + outputCost;
+  return calculateModelCostFromRegistry(model, inputTokens, outputTokens);
 }
 
 /**

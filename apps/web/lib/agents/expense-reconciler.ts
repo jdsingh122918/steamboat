@@ -12,7 +12,7 @@ import {
   createSuccessResult,
   createErrorResult,
 } from './types';
-import { AgentModel } from './config';
+import { getDefaultModelForRole } from './model-registry';
 import { BaseAgent } from './base-agent';
 import { parseJsonResponse } from './parse-json-response';
 
@@ -132,9 +132,10 @@ export class ExpenseReconciler extends BaseAgent<ReconcileInput, ReconciliationR
     // Pre-analyze data
     const analysis = analyzeExpenses(input.expenses);
     const potentialDuplicates = findDuplicates(input.expenses);
+    const defaultModel = getDefaultModelForRole(this.role);
 
     const result = await this.executeWithTracking({
-      model: AgentModel.HAIKU,
+      model: defaultModel,
       maxTokens: 1024,
       tripId: input.tripId,
       messages: [

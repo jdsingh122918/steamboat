@@ -15,13 +15,13 @@ export interface Env {
   // Session
   SESSION_SECRET: string;
 
-  // AI Services
-  ANTHROPIC_API_KEY: string;
+  // AI Services (OpenRouter)
+  OPENROUTER_API_KEY: string;
 
-  // Cloudinary
-  CLOUDINARY_CLOUD_NAME: string;
-  CLOUDINARY_API_KEY: string;
-  CLOUDINARY_API_SECRET: string;
+  // Vercel Blob Storage
+  // Note: BLOB_READ_WRITE_TOKEN is automatically used by @vercel/blob
+  // and doesn't need to be explicitly accessed in code
+  BLOB_READ_WRITE_TOKEN: string;
 
   // Pusher
   PUSHER_APP_ID: string;
@@ -37,10 +37,8 @@ export interface Env {
 const requiredVars = [
   'MONGODB_URI',
   'SESSION_SECRET',
-  'ANTHROPIC_API_KEY',
-  'CLOUDINARY_CLOUD_NAME',
-  'CLOUDINARY_API_KEY',
-  'CLOUDINARY_API_SECRET',
+  'OPENROUTER_API_KEY',
+  'BLOB_READ_WRITE_TOKEN',
   'PUSHER_APP_ID',
   'PUSHER_SECRET',
 ] as const;
@@ -82,13 +80,11 @@ function buildEnv(): Env {
     // Session
     SESSION_SECRET: getEnvVar('SESSION_SECRET', true),
 
-    // AI Services
-    ANTHROPIC_API_KEY: getEnvVar('ANTHROPIC_API_KEY', true),
+    // AI Services (OpenRouter)
+    OPENROUTER_API_KEY: getEnvVar('OPENROUTER_API_KEY', true),
 
-    // Cloudinary
-    CLOUDINARY_CLOUD_NAME: getEnvVar('CLOUDINARY_CLOUD_NAME', true),
-    CLOUDINARY_API_KEY: getEnvVar('CLOUDINARY_API_KEY', true),
-    CLOUDINARY_API_SECRET: getEnvVar('CLOUDINARY_API_SECRET', true),
+    // Vercel Blob Storage
+    BLOB_READ_WRITE_TOKEN: getEnvVar('BLOB_READ_WRITE_TOKEN', true),
 
     // Pusher
     PUSHER_APP_ID: getEnvVar('PUSHER_APP_ID', true),

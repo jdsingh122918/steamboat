@@ -12,7 +12,7 @@ import {
   createSuccessResult,
   createErrorResult,
 } from './types';
-import { AgentModel } from './config';
+import { getDefaultModelForRole } from './model-registry';
 import { BaseAgent } from './base-agent';
 import { parseJsonResponse } from './parse-json-response';
 
@@ -47,9 +47,10 @@ export class ActivityRecommender extends BaseAgent<RecommendInput, Recommendatio
    */
   async recommend(input: RecommendInput): Promise<AgentResult<RecommendationResult>> {
     this.setProcessing();
+    const defaultModel = getDefaultModelForRole(this.role);
 
     const result = await this.executeWithTracking({
-      model: AgentModel.SONNET,
+      model: defaultModel,
       maxTokens: 1024,
       tripId: input.tripId,
       messages: [

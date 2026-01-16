@@ -2,7 +2,7 @@
  * Receipt Processor Agent
  *
  * AI agent for extracting expense data from receipt images.
- * Uses Claude's vision capabilities to analyze receipts.
+ * Uses vision-capable models via OpenRouter to analyze receipts.
  */
 
 import {
@@ -13,7 +13,7 @@ import {
   createSuccessResult,
   createErrorResult,
 } from './types';
-import { AgentModel } from './config';
+import { getDefaultModelForRole } from './model-registry';
 import { BaseAgent } from './base-agent';
 import { parseJsonResponse } from './parse-json-response';
 
@@ -104,13 +104,17 @@ export class ReceiptProcessor extends BaseAgent<ProcessReceiptInput, ExtractedEx
   async processReceipt(input: ProcessReceiptInput): Promise<AgentResult<ExtractedExpenseData>> {
     this.setProcessing();
 
+    // Get default model for this role (should be vision-capable)
+    const defaultModel = getDefaultModelForRole(this.role);
+
     const result = await this.executeWithTracking({
-      model: AgentModel.SONNET,
+      model: defaultModel,
       maxTokens: 1024,
       tripId: input.tripId,
       messages: [
         {
           role: 'user',
+          // Using Anthropic-style format - base-agent will convert to OpenRouter format
           content: [
             {
               type: 'image',

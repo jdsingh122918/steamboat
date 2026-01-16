@@ -1,22 +1,33 @@
 /**
  * Agent Configuration
  *
- * Provides configuration and client creation for Claude API agents.
- * Supports model selection, cost tracking, and retry logic.
+ * Provides configuration for OpenRouter API agents.
+ * Supports multi-provider model selection via model registry.
+ *
+ * Note: This file provides backward compatibility exports.
+ * New code should use model-registry.ts directly.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import {
+  MODEL_REGISTRY,
+  getModelDefinition,
+  getDefaultModelForRole,
+  calculateModelCostFromRegistry,
+  type ModelDefinition,
+} from './model-registry';
+import { getOpenRouterClient, type OpenRouterClient } from './openrouter-client';
 
-// Available Claude models
+// Legacy model constants - mapped to OpenRouter model IDs
+// Kept for backward compatibility during migration
 export const AgentModel = {
-  HAIKU: 'claude-3-haiku-20240307',
-  SONNET: 'claude-sonnet-4-20250514',
-  OPUS: 'claude-opus-4-20250514',
+  HAIKU: 'anthropic/claude-3-haiku',
+  SONNET: 'anthropic/claude-3.5-sonnet',
+  OPUS: 'anthropic/claude-3.5-sonnet', // Map to sonnet as opus isn't in OpenRouter
 } as const;
 
-export type AgentModelType = (typeof AgentModel)[keyof typeof AgentModel];
+export type AgentModelType = string;
 
-// Model configuration with pricing (as of 2024)
+// Model configuration with pricing
 interface ModelConfig {
   name: string;
   maxTokens: number;
@@ -25,33 +36,9 @@ interface ModelConfig {
   contextWindow: number;
 }
 
-const MODEL_CONFIGS: Record<AgentModelType, ModelConfig> = {
-  [AgentModel.HAIKU]: {
-    name: 'Claude 3 Haiku',
-    maxTokens: 4096,
-    costPer1kInputTokens: 0.00025,
-    costPer1kOutputTokens: 0.00125,
-    contextWindow: 200000,
-  },
-  [AgentModel.SONNET]: {
-    name: 'Claude Sonnet 4',
-    maxTokens: 8192,
-    costPer1kInputTokens: 0.003,
-    costPer1kOutputTokens: 0.015,
-    contextWindow: 200000,
-  },
-  [AgentModel.OPUS]: {
-    name: 'Claude Opus 4',
-    maxTokens: 8192,
-    costPer1kInputTokens: 0.015,
-    costPer1kOutputTokens: 0.075,
-    contextWindow: 200000,
-  },
-};
-
 export interface AgentConfig {
   apiKey: string;
-  defaultModel: AgentModelType;
+  defaultModel: string;
   maxRetries: number;
   timeout: number;
 }
@@ -60,64 +47,76 @@ export interface AgentConfig {
  * Get agent configuration from environment
  */
 export function getAgentConfig(): AgentConfig {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   const skipValidation = process.env.SKIP_ENV_VALIDATION === 'true';
 
   if (!apiKey && !skipValidation) {
-    throw new Error('ANTHROPIC_API_KEY is not set');
+    throw new Error('OPENROUTER_API_KEY is not set');
   }
 
   return {
     apiKey: apiKey || '',
-    defaultModel: AgentModel.SONNET,
+    defaultModel: 'anthropic/claude-3.5-sonnet',
     maxRetries: 3,
     timeout: 60000, // 60 seconds
   };
 }
 
 /**
- * Create an Anthropic client instance
+ * Create an OpenRouter client instance
+ * (Replaces createAgentClient which returned Anthropic client)
  */
-export function createAgentClient(): Anthropic {
-  const config = getAgentConfig();
-  return new Anthropic({
-    apiKey: config.apiKey,
-  });
+export function createAgentClient(): OpenRouterClient {
+  return getOpenRouterClient();
 }
 
 /**
  * Get configuration for a specific model
  */
-export function getModelConfig(model: AgentModelType): ModelConfig {
-  return MODEL_CONFIGS[model];
+export function getModelConfig(model: string): ModelConfig {
+  const def = getModelDefinition(model);
+  if (!def) {
+    // Return defaults for unknown models
+    return {
+      name: model,
+      maxTokens: 4096,
+      costPer1kInputTokens: 0.001,
+      costPer1kOutputTokens: 0.002,
+      contextWindow: 100000,
+    };
+  }
+  return {
+    name: def.name,
+    maxTokens: def.maxOutputTokens,
+    costPer1kInputTokens: def.pricing.inputPer1k,
+    costPer1kOutputTokens: def.pricing.outputPer1k,
+    contextWindow: def.contextWindow,
+  };
 }
 
 /**
  * Calculate cost for a given number of tokens
  */
 export function calculateCost(
-  model: AgentModelType,
+  model: string,
   inputTokens: number,
   outputTokens: number
 ): number {
-  const config = MODEL_CONFIGS[model];
-  const inputCost = (inputTokens / 1000) * config.costPer1kInputTokens;
-  const outputCost = (outputTokens / 1000) * config.costPer1kOutputTokens;
-  return inputCost + outputCost;
+  return calculateModelCostFromRegistry(model, inputTokens, outputTokens);
 }
 
 /**
  * Get recommended model for a task type
  */
-export function getRecommendedModel(taskType: 'simple' | 'balanced' | 'complex'): AgentModelType {
+export function getRecommendedModel(taskType: 'simple' | 'balanced' | 'complex'): string {
   switch (taskType) {
     case 'simple':
-      return AgentModel.HAIKU; // Most cost-effective
+      return 'anthropic/claude-3-haiku';
     case 'balanced':
-      return AgentModel.SONNET; // Best balance of cost/quality
+      return 'anthropic/claude-3.5-sonnet';
     case 'complex':
-      return AgentModel.OPUS; // Highest quality
+      return 'anthropic/claude-3.5-sonnet';
     default:
-      return AgentModel.SONNET;
+      return 'anthropic/claude-3.5-sonnet';
   }
 }

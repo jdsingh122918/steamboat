@@ -2,13 +2,14 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import {
   CostTracker,
-  CostEntry,
-  CostSummary,
   formatCost,
   calculateModelCost,
 } from '../cost-tracker';
-import { AgentModel } from '../config';
 import { AgentRole } from '../types';
+
+// Use OpenRouter model IDs
+const HAIKU = 'anthropic/claude-3-haiku';
+const SONNET = 'anthropic/claude-3.5-sonnet';
 
 describe('Cost Tracker', () => {
   let tracker: CostTracker;
@@ -20,7 +21,7 @@ describe('Cost Tracker', () => {
   describe('recordUsage', () => {
     it('should record a single usage entry', () => {
       tracker.recordUsage({
-        model: AgentModel.SONNET,
+        model: SONNET,
         role: AgentRole.RECEIPT_PROCESSOR,
         inputTokens: 1000,
         outputTokens: 500,
@@ -35,7 +36,7 @@ describe('Cost Tracker', () => {
 
     it('should record multiple usage entries', () => {
       tracker.recordUsage({
-        model: AgentModel.HAIKU,
+        model: HAIKU,
         role: AgentRole.PAYMENT_ASSISTANT,
         inputTokens: 500,
         outputTokens: 200,
@@ -43,7 +44,7 @@ describe('Cost Tracker', () => {
       });
 
       tracker.recordUsage({
-        model: AgentModel.SONNET,
+        model: SONNET,
         role: AgentRole.EXPENSE_RECONCILER,
         inputTokens: 2000,
         outputTokens: 1000,
@@ -55,7 +56,7 @@ describe('Cost Tracker', () => {
 
     it('should include timestamp in entry', () => {
       tracker.recordUsage({
-        model: AgentModel.SONNET,
+        model: SONNET,
         role: AgentRole.GALLERY_ORGANIZER,
         inputTokens: 100,
         outputTokens: 50,
@@ -69,7 +70,7 @@ describe('Cost Tracker', () => {
 
     it('should calculate cost for entry', () => {
       tracker.recordUsage({
-        model: AgentModel.SONNET,
+        model: SONNET,
         role: AgentRole.RECEIPT_PROCESSOR,
         inputTokens: 1000,
         outputTokens: 1000,
@@ -92,7 +93,7 @@ describe('Cost Tracker', () => {
 
     it('should calculate total tokens correctly', () => {
       tracker.recordUsage({
-        model: AgentModel.HAIKU,
+        model: HAIKU,
         role: AgentRole.RECEIPT_PROCESSOR,
         inputTokens: 1000,
         outputTokens: 500,
@@ -100,7 +101,7 @@ describe('Cost Tracker', () => {
       });
 
       tracker.recordUsage({
-        model: AgentModel.SONNET,
+        model: SONNET,
         role: AgentRole.PAYMENT_ASSISTANT,
         inputTokens: 2000,
         outputTokens: 1000,
@@ -115,7 +116,7 @@ describe('Cost Tracker', () => {
 
     it('should calculate total cost correctly', () => {
       tracker.recordUsage({
-        model: AgentModel.SONNET,
+        model: SONNET,
         role: AgentRole.RECEIPT_PROCESSOR,
         inputTokens: 1000,
         outputTokens: 1000,
@@ -130,7 +131,7 @@ describe('Cost Tracker', () => {
 
     it('should break down by model', () => {
       tracker.recordUsage({
-        model: AgentModel.HAIKU,
+        model: HAIKU,
         role: AgentRole.RECEIPT_PROCESSOR,
         inputTokens: 1000,
         outputTokens: 500,
@@ -138,7 +139,7 @@ describe('Cost Tracker', () => {
       });
 
       tracker.recordUsage({
-        model: AgentModel.SONNET,
+        model: SONNET,
         role: AgentRole.PAYMENT_ASSISTANT,
         inputTokens: 2000,
         outputTokens: 1000,
@@ -146,15 +147,15 @@ describe('Cost Tracker', () => {
       });
 
       const summary = tracker.getSummary();
-      expect(summary.byModel[AgentModel.HAIKU]).toBeDefined();
-      expect(summary.byModel[AgentModel.SONNET]).toBeDefined();
-      expect(summary.byModel[AgentModel.HAIKU].requestCount).toBe(1);
-      expect(summary.byModel[AgentModel.SONNET].requestCount).toBe(1);
+      expect(summary.byModel[HAIKU]).toBeDefined();
+      expect(summary.byModel[SONNET]).toBeDefined();
+      expect(summary.byModel[HAIKU].requestCount).toBe(1);
+      expect(summary.byModel[SONNET].requestCount).toBe(1);
     });
 
     it('should break down by role', () => {
       tracker.recordUsage({
-        model: AgentModel.SONNET,
+        model: SONNET,
         role: AgentRole.RECEIPT_PROCESSOR,
         inputTokens: 1000,
         outputTokens: 500,
@@ -162,7 +163,7 @@ describe('Cost Tracker', () => {
       });
 
       tracker.recordUsage({
-        model: AgentModel.SONNET,
+        model: SONNET,
         role: AgentRole.GALLERY_ORGANIZER,
         inputTokens: 2000,
         outputTokens: 1000,
@@ -178,7 +179,7 @@ describe('Cost Tracker', () => {
   describe('getSummaryByTrip', () => {
     it('should filter by trip ID', () => {
       tracker.recordUsage({
-        model: AgentModel.SONNET,
+        model: SONNET,
         role: AgentRole.RECEIPT_PROCESSOR,
         inputTokens: 1000,
         outputTokens: 500,
@@ -186,7 +187,7 @@ describe('Cost Tracker', () => {
       });
 
       tracker.recordUsage({
-        model: AgentModel.SONNET,
+        model: SONNET,
         role: AgentRole.PAYMENT_ASSISTANT,
         inputTokens: 2000,
         outputTokens: 1000,
@@ -202,7 +203,7 @@ describe('Cost Tracker', () => {
   describe('clearEntries', () => {
     it('should clear all entries', () => {
       tracker.recordUsage({
-        model: AgentModel.SONNET,
+        model: SONNET,
         role: AgentRole.RECEIPT_PROCESSOR,
         inputTokens: 1000,
         outputTokens: 500,
@@ -235,24 +236,23 @@ describe('Cost Tracker', () => {
   describe('calculateModelCost', () => {
     it('should calculate HAIKU cost correctly', () => {
       // HAIKU: $0.00025/1k input, $0.00125/1k output
-      const cost = calculateModelCost(AgentModel.HAIKU, 1000, 1000);
+      const cost = calculateModelCost(HAIKU, 1000, 1000);
       expect(cost).toBeCloseTo(0.0015, 5);
     });
 
     it('should calculate SONNET cost correctly', () => {
       // SONNET: $0.003/1k input, $0.015/1k output
-      const cost = calculateModelCost(AgentModel.SONNET, 1000, 1000);
+      const cost = calculateModelCost(SONNET, 1000, 1000);
       expect(cost).toBeCloseTo(0.018, 5);
     });
 
-    it('should calculate OPUS cost correctly', () => {
-      // OPUS: $0.015/1k input, $0.075/1k output
-      const cost = calculateModelCost(AgentModel.OPUS, 1000, 1000);
-      expect(cost).toBeCloseTo(0.09, 5);
+    it('should handle zero tokens', () => {
+      const cost = calculateModelCost(SONNET, 0, 0);
+      expect(cost).toBe(0);
     });
 
-    it('should handle zero tokens', () => {
-      const cost = calculateModelCost(AgentModel.SONNET, 0, 0);
+    it('should return 0 for unknown models', () => {
+      const cost = calculateModelCost('unknown/model', 1000, 1000);
       expect(cost).toBe(0);
     });
   });

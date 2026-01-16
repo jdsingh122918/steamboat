@@ -59,3 +59,6 @@ export { TagInput } from './tag-input';
 export type { TagInputProps } from './tag-input';
 export { MediaEditModal } from './media-edit-modal';
 export type { MediaEditModalProps, MediaData, MediaEditData } from './media-edit-modal';
+
+// AI Settings
+export { AISettingsSection } from './ai-settings-section';

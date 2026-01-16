@@ -1,25 +1,53 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    messages: { create: vi.fn() },
-  })),
+// Mock the OpenRouter client
+vi.mock('../openrouter-client', () => ({
+  getOpenRouterClient: vi.fn(),
+  convertAnthropicMessages: vi.fn((messages) =>
+    messages.map((m: { role: string; content: unknown }) => ({
+      role: m.role,
+      content: m.content,
+    }))
+  ),
 }));
 
-import Anthropic from '@anthropic-ai/sdk';
+// Mock the agent config service
+vi.mock('../agent-config-service', () => ({
+  resolveAgentConfig: vi.fn().mockReturnValue({
+    modelId: 'anthropic/claude-3.5-sonnet',
+    maxTokens: 4096,
+    temperature: 0.7,
+    enableFallback: true,
+    fallbackOrder: ['openai/gpt-4o'],
+  }),
+  getCachedTripAISettings: vi.fn().mockResolvedValue(null),
+}));
+
+// Mock DB operations
+vi.mock('@/lib/db/operations/ai-settings', () => ({
+  getAISettings: vi.fn().mockResolvedValue(null),
+  getAISettingsByTripId: vi.fn().mockResolvedValue(null),
+  toAgentConfigFormat: vi.fn().mockReturnValue(null),
+}));
+
+import { getOpenRouterClient } from '../openrouter-client';
 import { PollDecisionAgent, calculateVoteStats } from '../poll-decision';
 import { AgentRole, AgentStatus } from '../types';
 
 describe('Poll Decision Agent', () => {
   let agent: PollDecisionAgent;
-  let mockClient: { messages: { create: ReturnType<typeof vi.fn> } };
+  let mockExecute: ReturnType<typeof vi.fn>;
   const originalEnv = process.env;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env = { ...originalEnv, ANTHROPIC_API_KEY: 'test-api-key' };
-    mockClient = { messages: { create: vi.fn() } };
-    (Anthropic as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => mockClient);
+    process.env = { ...originalEnv, OPENROUTER_API_KEY: 'test-api-key' };
+
+    mockExecute = vi.fn();
+    (getOpenRouterClient as ReturnType<typeof vi.fn>).mockReturnValue({
+      execute: mockExecute,
+    });
+
     agent = new PollDecisionAgent();
   });
 
@@ -29,10 +57,9 @@ describe('Poll Decision Agent', () => {
 
   describe('analyze', () => {
     it('should analyze poll results', async () => {
-      mockClient.messages.create.mockResolvedValue({
-        id: 'msg_123',
-        content: [{
-          type: 'text',
+      mockExecute.mockResolvedValue({
+        success: true,
+        data: {
           text: JSON.stringify({
             pollId: 'poll1',
             totalVotes: 9,
@@ -41,8 +68,13 @@ describe('Poll Decision Agent', () => {
             recommendation: 'Italian has the most votes',
             confidence: 0.8,
           }),
-        }],
-        usage: { input_tokens: 400, output_tokens: 150 },
+          inputTokens: 400,
+          outputTokens: 150,
+          model: 'anthropic/claude-3.5-sonnet',
+          fallbackCount: 0,
+        },
+        modelUsed: 'anthropic/claude-3.5-sonnet',
+        fallbackCount: 0,
       });
 
       const result = await agent.analyze({
