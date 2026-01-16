@@ -58,8 +58,8 @@ function getEnvVar(key: string, isRequired: boolean): string {
   // Check both with and without NEXT_PUBLIC_ prefix
   const value = process.env[key] ?? process.env[`NEXT_PUBLIC_${key}`];
 
-  // Skip validation if SKIP_ENV_VALIDATION is set (for CI builds)
-  const skipValidation = process.env.SKIP_ENV_VALIDATION === 'true';
+  // Skip validation if SKIP_ENV_VALIDATION is set or during Vercel build
+  const skipValidation = process.env.SKIP_ENV_VALIDATION === 'true' || process.env.VERCEL === '1';
 
   if (!value && isRequired && process.env.NODE_ENV === 'production' && !skipValidation) {
     throw new Error(
