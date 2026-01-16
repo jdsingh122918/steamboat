@@ -4,11 +4,6 @@
   "outputDirectory": "apps/web/.next",
   "installCommand": "npm install && cd apps/web && npm install",
   "framework": "nextjs",
-  "functions": {
-    "apps/web/app/api/mcp/**/*.ts": {
-      "maxDuration": 10
-    }
-  },
   "headers": [
     {
       "source": "/wasm/(.*)",
